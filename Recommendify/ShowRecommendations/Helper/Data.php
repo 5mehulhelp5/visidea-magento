@@ -22,7 +22,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $_objectManager;
     protected $scopeConfig;
     protected $file;
-    protected $newDirectory;
     protected $quoteFactory;
     protected $quoteModel;
     protected $quoteManagement;
@@ -36,7 +35,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     private $httpContext;
 
     const MODULE_ENABLED = 'recommendify_showrecommendations/general/enable';
-    const ORDER_EXPORT_DEFAULT_PATH = "recommendify/csv";
 
 
     public function __construct(
@@ -96,11 +94,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
-    public function getExportFolder($storeId = 0)
-    {
-        return self::ORDER_EXPORT_DEFAULT_PATH;
-    }
-
     public function getReturnUrl($path)
     {
         return $this->_storeManager->getStore()->getBaseUrl() . $path;
@@ -115,33 +108,24 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getInteractionExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/' . $this->getExportFolder() . '/interactions_' . $token_id . '.csv');
+        return $this->getReturnUrl('pub/media/recommendify/csv/interactions_' . $token_id . '.csv');
     }
 
     public function getItemsExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/' . $this->getExportFolder() . '/items_' . $token_id . '.csv');
+        return $this->getReturnUrl('pub/media/recommendify/csv/items_' . $token_id . '.csv');
     }
 
     public function getCustomerExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/' . $this->getExportFolder() . '/users_' . $token_id . '.csv');
+        return $this->getReturnUrl('pub/media/recommendify/csv/users_' . $token_id . '.csv');
     }
 
     public function getUrl($route, $params = [])
     {
         return $this->_getUrl($route, $params);
-    }
-
-
-    public function createDirectory($logPath)
-    {
-        $destPath2 = $this->dir->getPath('media') . '/' . $logPath;
-        if (!is_dir($destPath2)) {
-            $this->file->mkdir($destPath2, 0777, true);
-        }
     }
 
     public function getQuoteCollection()
@@ -156,6 +140,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $collection = $this->_productCollectionFactory->create();
         $collection->addAttributeToSelect('*');
+
         return $collection;
     }
 
@@ -166,19 +151,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             ->load();
     }
 
-    public function getFilteredCustomerCollection($attribute, $attributeValue)
-    {
-        return $this->_customerFactory->create()->getCollection()
-            ->addAttributeToSelect("*")
-            ->addAttributeToFilter($attribute, array("eq" => $attributeValue))->load();
-    }
-
     public function generateInteractionCsv($data)
     {
         $csvData = $data;
         $token_id = $this->getConfig('general', 'private_token');
         $fileName = 'interactions_' . $token_id . '.csv';
-        $filepath = 'media/' . $this->getExportFolder() . '/' . $fileName;
+        $filepath = 'media/recommendify/csv/' . $fileName;
         $stream = $this->directory->openFile($filepath, 'w+');
         $stream->lock();
         $columns = $this->getColumnHeader();
@@ -207,7 +185,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $token_id = $this->getConfig('general', 'private_token');
         $fileName = 'items_' . $token_id . '.csv';
 
-        $filepath = 'media/' . $this->getExportFolder() . '/' . $fileName;
+        $filepath = 'media/recommendify/csv/' . $fileName;
         $stream = $this->directory->openFile($filepath, 'w+');
         $stream->lock();
         $columns = $this->getItemColumnHeader();
@@ -242,7 +220,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $csvData = $data;
         $token_id = $this->getConfig('general', 'private_token');
         $fileName = 'users_' . $token_id . '.csv';
-        $filepath = 'media/' . $this->getExportFolder() . '/' . $fileName;
+        $filepath = 'media/recommendify/csv/' . $fileName;
         $stream = $this->directory->openFile($filepath, 'w+');
         $stream->lock();
         $columns = $this->getUserColumnHeader();
@@ -272,7 +250,10 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     public function createExportFolder()
     {
-        $this->createDirectory($this->getExportFolder());
+        $destPath2 = $this->dir->getPath('media') . '/recommendify/csv';
+        if (!is_dir($destPath2)) {
+            $this->file->mkdir($destPath2, 0777, true);
+        }
     }
 
     public function getColumnHeader()
