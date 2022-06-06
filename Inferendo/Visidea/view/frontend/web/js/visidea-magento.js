@@ -14,7 +14,7 @@ class VisideaMagento {
 
         // Initialize visidea
         this.visidea = visidea;
-        console.log(this.visidea)
+        // console.log(this.visidea)
 
         // Load necessary scripts and styles
         this.loadCss(
@@ -241,6 +241,26 @@ class VisideaMagento {
 
         // }.bind(this));
 
+    }
+
+    setUser(user_id)
+    {
+        var old_user_id = localStorage.getItem("Visidea.user");
+        if (old_user_id == null) {
+            if (user_id == 0) {
+                user_id = this.visidea.uuidv4();
+            }    
+            localStorage.setItem("Visidea.user", user_id);
+        } else {
+            if (user_id == 0) {
+                user_id = old_user_id
+            }
+        }
+        if (old_user_id != user_id && old_user_id != null) {
+            localStorage.setItem("Visidea.user", user_id);
+            this.visidea.merge_users(old_user_id, user_id);
+        }
+        return user_id;
     }
 
     async initializeVisualSearch()

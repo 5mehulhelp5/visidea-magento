@@ -29,25 +29,26 @@ class Info extends \Magento\Framework\View\Element\Template
 {
     protected $currentCustomer;
     protected $registry;
+    protected $httpContext;
 
     /**
      * Method __construct
      *
-     * @param \Magento\Framework\View\Element\Template\Context $context         context
-     * @param \Magento\Framework\Registry                      $registry        registry
-     * @param \Magento\Customer\Model\Session                  $customerSession customerSession
-     * @param array                                            $data            data
+     * @param \Magento\Framework\View\Element\Template\Context $context     context
+     * @param \Magento\Framework\Registry                      $registry    registry
+     * @param \Magento\Framework\App\Http\Context              $httpContext httpContext
+     * @param array                                            $data        data
      * 
      * @return void
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \Magento\Framework\Registry $registry,
-        \Magento\Customer\Model\Session $customerSession,
+        \Magento\Framework\App\Http\Context $httpContext,
         array $data = []
     ) {
         $this->registry = $registry;
-        $this->_customerSession = $customerSession;
+        $this->httpContext = $httpContext;
         parent::__construct($context, $data);
     }
 
@@ -58,7 +59,8 @@ class Info extends \Magento\Framework\View\Element\Template
      */
     public function getCustomerId()
     {
-        return $this->customer->getId();
+        // return $this->customer->getId();
+        return $this->httpContext->getValue('customer_id');
     }
 
     /**
@@ -72,12 +74,12 @@ class Info extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Method getCustomerSession
+     * Method isLoggedIn
      *
-     * @return string  returns customer session
+     * @return bool  returns true if user is logged in
      */
-    public function getCustomerSession()
+    public function isLoggedIn()
     {
-        return $this->_customerSession;
+        return $this->httpContext->getValue('customer_id') > 0;
     }
 }

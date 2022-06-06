@@ -1,22 +1,13 @@
 <?php
 $helper = $this->helper('Inferendo\Visidea\Helper\Data');
-if($helper->isEnable()):
+if ($helper->isEnable()):
     $public_token = $helper->getConfig('general','public_token');
     $website = $helper->getConfig('general','website');
-    // $url = $this->getBaseUrl();
     $currentFullAction = $block->getRequest()->getFullActionName();
-
-    if($block->getCustomerSession()->isLoggedIn()){
-        if($block->getCustomerSession()->getNotLoggedId()){
-            $old_user_id = $block->getCustomerSession()->getNotLoggedId();
-            $block->getCustomerSession()->unsNotLoggedId();
-        }
-        $user_id = $block->getCustomerSession()->getCustomerId();
+    if ($block->isLoggedIn()) {
+        $user_id = $block->getCustomerId();
     } else {
-        if(!$block->getCustomerSession()->getNotLoggedId()){
-            $block->getCustomerSession()->setNotLoggedId(uniqid());
-        }
-        $user_id = $block->getCustomerSession()->getNotLoggedId();
+        $user_id = 0;
     }
 
     if ($currentFullAction == 'catalog_product_view' && $currentProduct = $block->getCurrentProduct()) {
@@ -104,52 +95,57 @@ if($helper->isEnable()):
             var itemsProcessed = 0;
 
             function show_product(res){
-                res.forEach(function(item) {
-                    var producthtml = '' +
-                        '<div>' +
-                        '   <div class="product-item" style="width: 100%; padding:10px;">'+
-                        '       <div class="product-item-info">'+
-                        '           <a href="'+ item.url +'" class="product-item-photo">'+
-                        '               <span class="product-image-container" style="width:240px;">'+
-                        '                   <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
-                        '                       <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee">'+
-                        '                   </span>'+
-                        '               </span>'+
-                        '           </a>'+
-                        '           <div class="product-item-details">'+
-                        '               <strong class="product-item-name">'+
-                        '                   <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
-                        '                       '+ item.name +
-                        '                   </a>'+
-                        '               </strong>'+
-                        '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
-                        '                   <span class="price-container price-final_price tax weee">'+
-                        '                       <span class="price-label">As low as</span>'+
-                        '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span></span>'+
-                        '                   </span>'+
-                        '               </div>'+
-                        '           </div>'+
-                        '       </div>'+
-                        '    </div>'+
-                        '</div>';
+                if (Array.isArray(res)) {
+                    res.forEach(function(item) {
+                        var producthtml = '' +
+                            '<div>' +
+                            '   <div class="product-item" style="width: 100%; padding:10px;">'+
+                            '       <div class="product-item-info">'+
+                            '           <a href="'+ item.url +'" class="product-item-photo">'+
+                            '               <span class="product-image-container" style="width:240px;">'+
+                            '                   <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
+                            '                       <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee">'+
+                            '                   </span>'+
+                            '               </span>'+
+                            '           </a>'+
+                            '           <div class="product-item-details">'+
+                            '               <strong class="product-item-name">'+
+                            '                   <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
+                            '                       '+ item.name +
+                            '                   </a>'+
+                            '               </strong>'+
+                            '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
+                            '                   <span class="price-container price-final_price tax weee">'+
+                            '                       <span class="price-label">As low as</span>'+
+                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span></span>'+
+                            '                   </span>'+
+                            '               </div>'+
+                            '           </div>'+
+                            '       </div>'+
+                            '    </div>'+
+                            '</div>';
 
-                    var id = 'visidea-products'+gc;
-                    document.getElementById(id).innerHTML += producthtml;
-                });
+                        var id = 'visidea-products'+gc;
+                        document.getElementById(id).innerHTML += producthtml;
+                    });
+                }
                 gc++;
             }
 
 
             var visidea = new Visidea.Api('<?= $website ?>', '<?= $public_token ?>');
             whenExists("visidea.conf", function() {
-                <?php if(isset($old_user_id)): ?>
-                    visidea.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
-                <?php endif; ?>
 
-                <?php
-                if($page == 'product'):
-                ?>
-                visidea.item_view("<?= $product_id ?>","<?= $user_id ?>");
+                window.visideaMagento = new VisideaMagento(visidea, '<?= $website ?>', '<?= $public_token ?>');
+                var user_id = window.visideaMagento.setUser(<?= $user_id; ?>);
+                console.log(user_id)
+
+                // <?php if(isset($old_user_id)): ?>
+                //     visidea.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
+                // <?php endif; ?>
+
+                <?php if($page == 'product'): ?>
+                visidea.item_view("<?= $product_id ?>",user_id);
                 <?php endif; ?>
 
                 var cont = 1;
@@ -168,7 +164,7 @@ if($helper->isEnable()):
                             '            </div>';
                         document.getElementById("visidea-cont").innerHTML += myhtml;
 
-                        visidea.recommend(item.algo, "<?= $user_id; ?>", "<?= $product_id; ?>", [], item.n,
+                        visidea.recommend(item.algo, user_id, "<?= $product_id; ?>", [], item.n,
                             function (res) {
                                 show_product(res);
                                 itemsProcessed++;
@@ -181,8 +177,6 @@ if($helper->isEnable()):
                         cont++;
                     }
                 });
-
-                window.visideaMagento = new VisideaMagento(visidea, '<?= $website ?>', '<?= $public_token ?>');
 
             });
 
