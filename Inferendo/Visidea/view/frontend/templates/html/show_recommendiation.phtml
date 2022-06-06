@@ -1,0 +1,182 @@
+<?php
+$helper = $this->helper('Inferendo\Visidea\Helper\Data');
+if($helper->isEnable()):
+    $public_token = $helper->getConfig('general','public_token');
+    $url = $this->getBaseUrl();
+    $currentFullAction = $block->getRequest()->getFullActionName();
+
+    if($block->getCustomerSession()->isLoggedIn()){
+        if($block->getCustomerSession()->getNotLoggedId()){
+            $old_user_id = $block->getCustomerSession()->getNotLoggedId();
+            $block->getCustomerSession()->unsNotLoggedId();
+        }
+        $user_id = $block->getCustomerSession()->getCustomerId();
+    } else {
+        if(!$block->getCustomerSession()->getNotLoggedId()){
+            $block->getCustomerSession()->setNotLoggedId(uniqid());
+        }
+        $user_id = $block->getCustomerSession()->getNotLoggedId();
+    }
+
+    if ($currentFullAction == 'catalog_product_view' && $currentProduct = $block->getCurrentProduct()) {
+        $product_id = $currentProduct->getId();
+    } else {
+        $product_id = 0;
+    }
+
+    switch ($currentFullAction){
+        case 'catalog_product_view':
+            $page = 'product';
+            break;
+        case 'checkout_cart_index':
+            $page = 'cart';
+            break;
+        case 'checkout_onepage_success':
+            $page = 'order';
+            break;
+        case 'cms_index_index':
+            $page = 'home';
+            break;
+    }
+?>
+
+
+    <div class="block widget block-products-list grid">
+        <div class="block-content" id="visidea-cont">
+
+
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+
+        require(["Visidea", "jquery", "Slick"], function (Visidea, $) {
+
+            var whenExists = function(name, callback) {
+                var interval = 10; // ms
+                window.setTimeout(function() {
+                    if (eval(name) != undefined) {
+                        callback();
+                    } else {
+                        window.setTimeout(arguments.callee, interval);
+                    }
+                }, interval);
+            }
+
+            function show_slider(){
+                $('.products-rec').slick({
+                    slidesToShow: 5,
+                    slidesToScroll: 1,
+                    centerMode: false,
+                    arrows: true,
+                    autoplay: true,
+                    autoplaySpeed: 2000,
+                    responsive: [
+                        {
+                            breakpoint: 1300,
+                            settings: {
+                                slidesToShow: 4,
+                                slidesToScroll: 1,
+                            }
+                        },
+                        {
+                            breakpoint: 1000,
+                                settings: {
+                            slidesToShow: 3,
+                                slidesToScroll: 1
+                        }
+                        },
+                        {
+                            breakpoint: 420,
+                                settings: {
+                            slidesToShow: 2,
+                                slidesToScroll: 1
+                        }
+                        }
+                    ]
+                });
+
+            }
+
+            var gc = 1;
+            var itemsProcessed = 0;
+
+            function show_product(res){
+                res.forEach(function(item) {
+                    var producthtml = '' +
+                        '<div>' +
+                        '<li class="product-item" style="width: 100%; padding:10px;">'+
+                        '                        <div class="product-item-info">'+
+                        '                            <a href="'+ item.url +'" class="product-item-photo">'+
+                        '                  <span class="product-image-container" style="width:240px;">'+
+                        '                  <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
+                        '                  <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee"></span>'+
+                        '                  </span>'+
+                        '                            </a>'+
+                        '                            <div class="product-item-details">'+
+                        '                                <strong class="product-item-name">'+
+                        '                                    <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
+                        '                                        '+ item.name +'                                   </a>'+
+                        '                                </strong>'+
+
+                        '                                <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
+                        '                        <span class="price-container price-final_price tax weee">'+
+                        '                        <span class="price-label">As low as</span>'+
+                        '                        <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span>'+
+                        '                        </span>'+
+                        '                        </span>'+
+                        '                                </div>'+
+                        '                                '+
+                        '                            </div>'+
+                        '                        </div>'+
+                        '                    </li>'+
+                        '</div>';
+
+                    var id = 'visidea-products'+gc;
+                    document.getElementById(id).innerHTML += producthtml;
+                });
+                gc++;
+            }
+
+
+            var client = new Visidea.Api('<?= $url ?>', '<?= $public_token ?>');
+
+            whenExists("client.conf", function() {
+                <?php if(isset($old_user_id)): ?>
+                client.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
+                <?php endif; ?>
+
+                <?php
+                if($page == 'product'):
+                ?>
+                client.item_view("<?= $product_id ?>","<?= $user_id ?>");
+                <?php endif; ?>
+
+                var cont = 1;
+                var n_rec_type = client.conf.<?= $page; ?>.length;
+
+                client.conf.<?= $page; ?>.forEach(function(item) {
+                    var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
+                        '                <ol id="visidea-products' + cont + '" class="products list items product-items products-rec">' +
+                        '                </ol>' +
+                        '            </div>';
+                    document.getElementById("visidea-cont").innerHTML += myhtml;
+
+                    client.recommend(item.algo, "<?= $user_id; ?>", "<?= $product_id; ?>", [], item.n,
+                        function (res) {
+                            show_product(res);
+                            itemsProcessed++;
+                            if (itemsProcessed == n_rec_type) {
+                                show_slider();
+                            }
+                        }, []);
+                cont++;
+                });
+
+            });
+
+        });
+    </script>
+
+<?php endif; ?>
