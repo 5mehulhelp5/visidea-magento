@@ -1,6 +1,7 @@
 var config = {
-    'paths': {
-        'Recommendify': 'https://cdn.recommendify.com/js-api-client/dist/recommendify-api-client.min',
+    paths: {
+        'Visidea': 'https://cdn.visidea.ai/js-api-client/dist/visidea-api-client.min',
+        'VisideaMagento': 'Inferendo_Visidea/js/visidea-magento',
         'Slick': '//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min'
     }
 };

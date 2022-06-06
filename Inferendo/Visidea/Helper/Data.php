@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * Manage data.
+ *
+ * @category  Visidea
+ * @package   Inferendo_Visidea
+ * @author    Inferendo SRL <hello@visidea.ai>
+ * @copyright 2022 Inferendo SRL
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
+ * @link      https://visidea.ai/
+ */
+
 namespace Inferendo\Visidea\Helper;
 
 use Magento\Sales\Model\Order;
@@ -14,12 +25,22 @@ use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Module\Dir;
 use Magento\Framework\File\Csv;
 
+/**
+ * Data class
+ * 
+ * @category  Visidea
+ * @package   Inferendo_Visidea
+ * @author    Inferendo SRL <hello@visidea.ai>
+ * @copyright 2022 Inferendo SRL
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
+ * @link      https://visidea.ai/
+ */
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
-    protected $_logger;
-    protected $_storeManager;
+    protected $logger;
+    protected $storeManager;
     protected $orderManagement;
-    protected $_objectManager;
+    protected $objectManager;
     protected $scopeConfig;
     protected $file;
     protected $quoteFactory;
@@ -27,16 +48,39 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $quoteManagement;
     protected $dateTime;
     protected $csvProcessor;
-    protected $_fileFactory;
+    protected $fileFactory;
     protected $directory;
-    protected $_productCollectionFactory;
-    protected $_customer;
-    protected $_customerFactory;
-    private $httpContext;
+    protected $productCollectionFactory;
+    protected $customer;
+    protected $customerFactory;
+    private $_httpContext;
 
     const MODULE_ENABLED = 'inferendo_visidea/general/enable';
 
-
+    /**
+     * Method __construct
+     *
+     * @param \Magento\Framework\App\Helper\Context                          $context                  context
+     * @param \Magento\Store\Model\StoreManagerInterface                     $storeManager             storeManager
+     * @param OrderManagementInterface                                       $orderManagement          orderManagement
+     * @param \Magento\Framework\ObjectManagerInterface                      $objectManager            objectManager
+     * @param ScopeConfigInterface                                           $scopeConfig              scopeConfig
+     * @param \Magento\Framework\Filesystem\Io\File                          $file                     file
+     * @param \Magento\Framework\Filesystem\DirectoryList                    $dir                      dir
+     * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory     $quoteFactory             quoteFactory
+     * @param \Magento\Quote\Model\Quote                                     $quoteModel               quoteModel
+     * @param \Magento\Quote\Model\QuoteManagement                           $quoteManagement          quoteManagement
+     * @param \Magento\Framework\Stdlib\DateTime\DateTime                    $dateTime                 dateTime
+     * @param \Magento\Framework\App\Response\Http\FileFactory               $fileFactory              fileFactory
+     * @param \Magento\Framework\Filesystem                                  $filesystem               filesystem
+     * @param Csv                                                            $csvProcessor             csvProcessor
+     * @param \Magento\Framework\App\Http\Context                            $httpContext              httpContext
+     * @param \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory productCollectionFactory
+     * @param \Magento\Customer\Model\CustomerFactory                        $customerFactory          customerFactory
+     * @param \Magento\Customer\Model\Customer                               $customers                customers
+     * 
+     * @return void no return
+     */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
@@ -56,12 +100,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
         \Magento\Customer\Model\CustomerFactory $customerFactory,
         \Magento\Customer\Model\Customer $customers
-    )
-    {
-        $this->_storeManager = $storeManager;
-        $this->_logger = $context->getLogger();
+    ) {
+        $this->storeManager = $storeManager;
+        $this->logger = $context->getLogger();
         $this->orderManagement = $orderManagement;
-        $this->_objectManager = $objectManager;
+        $this->objectManager = $objectManager;
         $this->scopeConfig = $scopeConfig;
         $this->file = $file;
         $this->dir = $dir;
@@ -70,21 +113,34 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->quoteManagement = $quoteManagement;
         $this->dateTime = $dateTime;
         $this->csvProcessor = $csvProcessor;
-        $this->_fileFactory = $fileFactory;
+        $this->fileFactory = $fileFactory;
         $this->directory = $filesystem->getDirectoryWrite(DirectoryList::PUB);
-        $this->httpContext = $httpContext;
-        $this->_productCollectionFactory = $productCollectionFactory;
-        $this->_customerFactory = $customerFactory;
-        $this->_customer = $customers;
+        $this->_httpContext = $httpContext;
+        $this->productCollectionFactory = $productCollectionFactory;
+        $this->customerFactory = $customerFactory;
+        $this->customer = $customers;
         parent::__construct($context);
     }
 
-
+    /**
+     * Method isEnable
+     *
+     * @return int return if the module if enabled
+     */
     public function isEnable()
     {
-        return (int)$this->scopeConfig->getValue(self::MODULE_ENABLED, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        return 1;
     }
 
+    /**
+     * Method getConfig
+     *
+     * @param string $group   group
+     * @param string $field   field
+     * @param int    $storeId storeId
+     *
+     * @return array         return the confif
+     */
     public function getConfig($group, $field, $storeId = 0)
     {
         return $this->scopeConfig->getValue(
@@ -94,40 +150,80 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         );
     }
 
+    /**
+     * Method getReturnUrl
+     *
+     * @param string $path path
+     *
+     * @return string         return full path
+     */
     public function getReturnUrl($path)
     {
-        return $this->_storeManager->getStore()->getBaseUrl() . $path;
+        return $this->storeManager->getStore()->getBaseUrl() . $path;
     }
 
+    /**
+     * Method getCronUrl
+     *
+     * @return string         return full path
+     */
     public function getCronUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
         return $this->getReturnUrl('visidea/csv/export/token_id/' . $token_id);
     }
 
+    /**
+     * Method getInteractionExportUrl
+     *
+     * @return string         return url
+     */
     public function getInteractionExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
         return $this->getReturnUrl('pub/media/visidea/csv/interactions_' . $token_id . '.csv');
     }
 
+    /**
+     * Method getItemsExportUrl
+     *
+     * @return string         return url
+     */
     public function getItemsExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
         return $this->getReturnUrl('pub/media/visidea/csv/items_' . $token_id . '.csv');
     }
 
+    /**
+     * Method getCustomerExportUrl
+     *
+     * @return string         return url
+     */
     public function getCustomerExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
         return $this->getReturnUrl('pub/media/visidea/csv/users_' . $token_id . '.csv');
     }
 
+    /**
+     * Method getUrl
+     *
+     * @param string $route  route
+     * @param array  $params params
+     *
+     * @return string               return url
+     */
     public function getUrl($route, $params = [])
     {
         return $this->_getUrl($route, $params);
     }
 
+    /**
+     * Method getQuoteCollection
+     *
+     * @return array return quote
+     */
     public function getQuoteCollection()
     {
         $collection = $this->quoteFactory->create()->addFieldToSelect('*');
@@ -136,21 +232,38 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $collection;
     }
 
+    /**
+     * Method getProductCollection
+     *
+     * @return array return collection
+     */
     public function getProductCollection()
     {
-        $collection = $this->_productCollectionFactory->create();
+        $collection = $this->productCollectionFactory->create();
         $collection->addAttributeToSelect('*');
 
         return $collection;
     }
 
+    /**
+     * Method getCustomerCollection
+     *
+     * @return array return collection
+     */
     public function getCustomerCollection()
     {
-        return $this->_customer->getCollection()
+        return $this->customer->getCollection()
             ->addAttributeToSelect("*")
             ->load();
     }
 
+    /**
+     * Method generateInteractionCsv
+     *
+     * @param array $data data
+     *
+     * @return void
+     */
     public function generateInteractionCsv($data)
     {
         $csvData = $data;
@@ -178,7 +291,13 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
-
+    /**
+     * Method generateItemCsv
+     *
+     * @param array $data data
+     *
+     * @return void
+     */
     public function generateItemCsv($data)
     {
         $csvData = $data;
@@ -215,6 +334,13 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
+    /**
+     * Method generateUserCsv
+     *
+     * @param array $data data
+     *
+     * @return void
+     */
     public function generateUserCsv($data)
     {
         $csvData = $data;
@@ -248,6 +374,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
+    /**
+     * Method createExportFolder
+     *
+     * @return void
+     */
     public function createExportFolder()
     {
         $destPath2 = $this->dir->getPath('media') . '/visidea/csv';
@@ -256,27 +387,47 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
     }
 
+    /**
+     * Method getColumnHeader
+     *
+     * @return array return headers
+     */
     public function getColumnHeader()
     {
         $headers = ['user_id', 'item_id', 'action', 'timestamp'];
         return $headers;
     }
 
+    /**
+     * Method getUserColumnHeader
+     *
+     * @return array return headers
+     */
     public function getUserColumnHeader()
     {
         $headers = ['user_id', 'email', 'name', 'surname', 'address', 'city', 'zip', 'state', 'country', 'birthday'];
         return $headers;
     }
 
+    /**
+     * Method getItemColumnHeader
+     *
+     * @return array return headers
+     */
     public function getItemColumnHeader()
     {
         $headers = ['item_id', 'name', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock'];
         return $headers;
     }
 
+    /**
+     * Method isLoggedIn
+     *
+     * @return bool return true if logged in
+     */
     public function isLoggedIn()
     {
-        $isLoggedIn = $this->httpContext->getValue(\Magento\Customer\Model\Context::CONTEXT_AUTH);
+        $isLoggedIn = $this->_httpContext->getValue(\Magento\Customer\Model\Context::CONTEXT_AUTH);
         return $isLoggedIn;
     }
 }

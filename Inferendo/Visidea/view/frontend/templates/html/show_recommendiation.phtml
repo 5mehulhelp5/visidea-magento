@@ -2,7 +2,8 @@
 $helper = $this->helper('Inferendo\Visidea\Helper\Data');
 if($helper->isEnable()):
     $public_token = $helper->getConfig('general','public_token');
-    $url = $this->getBaseUrl();
+    $website = $helper->getConfig('general','website');
+    // $url = $this->getBaseUrl();
     $currentFullAction = $block->getRequest()->getFullActionName();
 
     if($block->getCustomerSession()->isLoggedIn()){
@@ -51,7 +52,7 @@ if($helper->isEnable()):
 
     <script type="text/javascript">
 
-        require(["Visidea", "jquery", "Slick"], function (Visidea, $) {
+        require(["Visidea", "VisideaMagento", "jquery", "Slick"], function (Visidea, VisMagento, $) {
 
             var whenExists = function(name, callback) {
                 var interval = 10; // ms
@@ -106,31 +107,30 @@ if($helper->isEnable()):
                 res.forEach(function(item) {
                     var producthtml = '' +
                         '<div>' +
-                        '<li class="product-item" style="width: 100%; padding:10px;">'+
-                        '                        <div class="product-item-info">'+
-                        '                            <a href="'+ item.url +'" class="product-item-photo">'+
-                        '                  <span class="product-image-container" style="width:240px;">'+
-                        '                  <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
-                        '                  <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee"></span>'+
-                        '                  </span>'+
-                        '                            </a>'+
-                        '                            <div class="product-item-details">'+
-                        '                                <strong class="product-item-name">'+
-                        '                                    <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
-                        '                                        '+ item.name +'                                   </a>'+
-                        '                                </strong>'+
-
-                        '                                <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
-                        '                        <span class="price-container price-final_price tax weee">'+
-                        '                        <span class="price-label">As low as</span>'+
-                        '                        <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span>'+
-                        '                        </span>'+
-                        '                        </span>'+
-                        '                                </div>'+
-                        '                                '+
-                        '                            </div>'+
-                        '                        </div>'+
-                        '                    </li>'+
+                        '   <div class="product-item" style="width: 100%; padding:10px;">'+
+                        '       <div class="product-item-info">'+
+                        '           <a href="'+ item.url +'" class="product-item-photo">'+
+                        '               <span class="product-image-container" style="width:240px;">'+
+                        '                   <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
+                        '                       <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee">'+
+                        '                   </span>'+
+                        '               </span>'+
+                        '           </a>'+
+                        '           <div class="product-item-details">'+
+                        '               <strong class="product-item-name">'+
+                        '                   <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
+                        '                       '+ item.name +
+                        '                   </a>'+
+                        '               </strong>'+
+                        '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
+                        '                   <span class="price-container price-final_price tax weee">'+
+                        '                       <span class="price-label">As low as</span>'+
+                        '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span></span>'+
+                        '                   </span>'+
+                        '               </div>'+
+                        '           </div>'+
+                        '       </div>'+
+                        '    </div>'+
                         '</div>';
 
                     var id = 'visidea-products'+gc;
@@ -140,41 +140,52 @@ if($helper->isEnable()):
             }
 
 
-            var client = new Visidea.Api('<?= $url ?>', '<?= $public_token ?>');
-
-            whenExists("client.conf", function() {
+            var visidea = new Visidea.Api('<?= $website ?>', '<?= $public_token ?>');
+            whenExists("visidea.conf", function() {
                 <?php if(isset($old_user_id)): ?>
-                client.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
+                    visidea.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
                 <?php endif; ?>
 
                 <?php
                 if($page == 'product'):
                 ?>
-                client.item_view("<?= $product_id ?>","<?= $user_id ?>");
+                visidea.item_view("<?= $product_id ?>","<?= $user_id ?>");
                 <?php endif; ?>
 
                 var cont = 1;
-                var n_rec_type = client.conf.<?= $page; ?>.length;
+                var n_rec_type = 0;
 
-                client.conf.<?= $page; ?>.forEach(function(item) {
-                    var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
-                        '                <ol id="visidea-products' + cont + '" class="products list items product-items products-rec">' +
-                        '                </ol>' +
-                        '            </div>';
-                    document.getElementById("visidea-cont").innerHTML += myhtml;
-
-                    client.recommend(item.algo, "<?= $user_id; ?>", "<?= $product_id; ?>", [], item.n,
-                        function (res) {
-                            show_product(res);
-                            itemsProcessed++;
-                            if (itemsProcessed == n_rec_type) {
-                                show_slider();
-                            }
-                        }, []);
-                cont++;
+                visidea.conf.<?= $page; ?>.forEach(function(item) {
+                    if (item.show)
+                        n_rec_type++;
                 });
 
+                visidea.conf.<?= $page; ?>.forEach(function(item) {
+                    if (item.show) {
+                        var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
+                            '                <div id="visidea-products' + cont + '" class="visidea products-rec">' +
+                            '                </div>' +
+                            '            </div>';
+                        document.getElementById("visidea-cont").innerHTML += myhtml;
+
+                        visidea.recommend(item.algo, "<?= $user_id; ?>", "<?= $product_id; ?>", [], item.n,
+                            function (res) {
+                                show_product(res);
+                                itemsProcessed++;
+                                console.log('itemsProcessed:'+itemsProcessed)
+                                console.log('n_rec_type:'+n_rec_type)
+                                if (itemsProcessed == n_rec_type) {
+                                    show_slider();
+                                }
+                            }, []);
+                        cont++;
+                    }
+                });
+
+                window.visideaMagento = new VisideaMagento(visidea, '<?= $website ?>', '<?= $public_token ?>');
+
             });
+
 
         });
     </script>

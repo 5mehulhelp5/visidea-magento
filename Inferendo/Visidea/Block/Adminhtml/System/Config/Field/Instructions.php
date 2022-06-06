@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Customer export field.
+ * Instructions field.
  *
  * @category  Visidea
  * @package   Inferendo_Visidea
@@ -16,7 +16,7 @@ namespace Inferendo\Visidea\Block\Adminhtml\System\Config\Field;
 use Inferendo\Visidea\Helper\Data;
 
 /**
- * CustomerExport class
+ * Instructions class
  * 
  * @category  Visidea
  * @package   Inferendo_Visidea
@@ -25,27 +25,27 @@ use Inferendo\Visidea\Helper\Data;
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
  * @link      https://visidea.ai/
  */
-class CustomerExport extends \Magento\Config\Block\System\Config\Form\Field
+class Instructions extends \Magento\Config\Block\System\Config\Form\Field
 {
 
     protected $helper;
-    protected $_template = 'customerexport.phtml';
+    protected $_template = 'instructions.phtml';
 
     /**
      * Method __construct
      *
-     * @param \Magento\Backend\Block\Template\Context $context context
-     * @param Data                                    $helper  helper
-     * @param array                                   $data    data
+     * @param \Magento\Backend\Block\Template\Context  $context   context
+     * @param \Magento\Framework\View\Asset\Repository $assetRepo assetRepo
+     * @param array                                    $data      data
      * 
      * @return void no return
      */
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
-        Data $helper,
+        \Magento\Framework\View\Asset\Repository $assetRepo,
         array $data = []
     ) {
-        $this->helper = $helper;
+        $this->_assetRepo = $assetRepo;
         parent::__construct($context, $data);
     }
 
@@ -63,22 +63,13 @@ class CustomerExport extends \Magento\Config\Block\System\Config\Form\Field
     }
 
     /**
-     * Method getCustomerExportUrl
+     * Method getImageUrl
      * 
      * @return string url
      */
-    public function getCustomerExportUrl()
+    public function getImageUrl()
     {
-        return $this->helper->getCustomerExportUrl();
+        return $this->_assetRepo->getUrl("Inferendo_Visidea::images/visidea-logo.png");
     }
-
-    /**
-     * Method isEnabled
-     *
-     * @return bool return true if enabled
-     */
-    public function isEnabled()
-    {
-        return $this->helper->isEnable();
-    }
+    
 }

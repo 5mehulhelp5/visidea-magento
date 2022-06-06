@@ -1,32 +1,67 @@
 <?php
 
+/**
+ * Export csv files.
+ *
+ * @category  Visidea
+ * @package   Inferendo_Visidea
+ * @author    Inferendo SRL <hello@visidea.ai>
+ * @copyright 2022 Inferendo SRL
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
+ * @link      https://visidea.ai/
+ */
+
 namespace Inferendo\Visidea\Controller\Csv;
 
 use Inferendo\Visidea\Helper\Data;
 
+/**
+ * Export class
+ * 
+ * @category  Visidea
+ * @package   Inferendo_Visidea
+ * @author    Inferendo SRL <hello@visidea.ai>
+ * @copyright 2022 Inferendo SRL
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
+ * @link      https://visidea.ai/
+ */
 class Export extends \Magento\Framework\App\Action\Action
 {
     protected $request;
     protected $helper;
 
+    /**
+     * Method __construct
+     *
+     * @param \Magento\Framework\App\Action\Contex $context context
+     * @param \Magento\Framework\App\Action\Http   $request request
+     * @param \Inferendo\Visidea\Helper\Data       $helper  helper
+     * 
+     * @return void no return
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \Magento\Framework\App\Request\Http $request,
         Data $helper
-    )
-    {
+    ) {
         $this->request = $request;
         $this->helper = $helper;
         parent::__construct($context);
     }
 
+    /**
+     * Method execute
+     *
+     * @return void no return
+     */
     public function execute()
     {
         $req = $this->getRequest();
         $data = $this->request->getParams();
-        if (isset($data['token_id']) &&
-            $data['token_id'] == $this->helper->getConfig('general', 'private_token')
-            && $this->helper->isEnable()) {
+        if (isset($data['token_id'])
+            && $data['token_id'] == $this->helper->getConfig('general', 'private_token')
+            && $this->helper->isEnable()
+        ) {
             $this->helper->createExportFolder();
 
             $collection = $this->helper->getQuoteCollection();
@@ -126,22 +161,18 @@ class Export extends \Magento\Framework\App\Action\Action
                         $_children = $_product->getTypeInstance()->getUsedProducts($_product);
                         $simplePrice = $_children[0]->getPrice();
                         $finalPrice = $_children[0]->getFinalPrice();
-                        foreach ($_children as $child)
-                        {
-                            $productStock += $stockState->getStockQty($child->getId(),
-                                $product->getStore()->getWebsiteId());
+                        foreach ($_children as $child) {
+                            $productStock += $stockState->getStockQty($child->getId(), $product->getStore()->getWebsiteId());
                         }
                     } elseif ($_product->getTypeId() == "grouped") {
                         $lowest_stock = -1;
                         $simulationPrice = 0;
                         $simulationFinalPrice = 0;
                         $associatedProducts = $_product->getTypeInstance(true)->getAssociatedProducts($_product);
-                        foreach ($associatedProducts as $childProduct)
-                        {
+                        foreach ($associatedProducts as $childProduct) {
                             $simulationPrice += $childProduct->getPrice();
                             $simulationFinalPrice += $childProduct->getFinalPrice();
-                            $child_stock = $stockState->getStockQty($childProduct->getId(),
-                                $product->getStore()->getWebsiteId());
+                            $child_stock = $stockState->getStockQty($childProduct->getId(), $product->getStore()->getWebsiteId());
                             if ($child_stock < $lowest_stock || $lowest_stock == -1)
                                 $lowest_stock = $child_stock;
                         }
