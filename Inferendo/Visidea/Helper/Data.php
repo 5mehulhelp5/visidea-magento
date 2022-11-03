@@ -16,14 +16,17 @@ namespace Inferendo\Visidea\Helper;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Api\OrderManagementInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Filesystem;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Filesystem\Directory\WriteInterface;
 use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Module\Dir;
 use Magento\Framework\File\Csv;
+use Magento\Framework\App\PageCache\Version;
+use Magento\Framework\App\Cache\TypeListInterface;
+use Magento\Framework\App\Cache\Frontend\Pool;
 
 /**
  * Data class
@@ -42,6 +45,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $orderManagement;
     protected $objectManager;
     protected $scopeConfig;
+    protected $writeConfig;
     protected $file;
     protected $quoteFactory;
     protected $quoteModel;
@@ -53,6 +57,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $productCollectionFactory;
     protected $customer;
     protected $customerFactory;
+    protected $cacheTypeList;
+    protected $cacheFrontendPool;
     private $_httpContext;
 
     const MODULE_ENABLED = 'inferendo_visidea/general/enable';
@@ -64,7 +70,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param \Magento\Store\Model\StoreManagerInterface                     $storeManager             storeManager
      * @param OrderManagementInterface                                       $orderManagement          orderManagement
      * @param \Magento\Framework\ObjectManagerInterface                      $objectManager            objectManager
-     * @param ScopeConfigInterface                                           $scopeConfig              scopeConfig
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface             $scopeConfig              scopeConfig
+     * @param \Magento\Framework\App\Config\Storage\WriterInterface          $writerConfig             writerConfig
      * @param \Magento\Framework\Filesystem\Io\File                          $file                     file
      * @param \Magento\Framework\Filesystem\DirectoryList                    $dir                      dir
      * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory     $quoteFactory             quoteFactory
@@ -86,7 +93,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         OrderManagementInterface $orderManagement,
         \Magento\Framework\ObjectManagerInterface $objectManager,
-        ScopeConfigInterface $scopeConfig,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Magento\Framework\App\Config\Storage\WriterInterface $scopeWriterConfig,
         \Magento\Framework\Filesystem\Io\File $file,
         \Magento\Framework\Filesystem\DirectoryList $dir,
         \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $quoteFactory,
@@ -99,13 +107,17 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Framework\App\Http\Context $httpContext,
         \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
         \Magento\Customer\Model\CustomerFactory $customerFactory,
-        \Magento\Customer\Model\Customer $customers
+        \Magento\Customer\Model\Customer $customers,
+        \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList, 
+        \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool
+    
     ) {
         $this->storeManager = $storeManager;
         $this->logger = $context->getLogger();
         $this->orderManagement = $orderManagement;
         $this->objectManager = $objectManager;
         $this->scopeConfig = $scopeConfig;
+        $this->writeConfig = $scopeWriterConfig;
         $this->file = $file;
         $this->dir = $dir;
         $this->quoteFactory = $quoteFactory;
@@ -119,6 +131,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->productCollectionFactory = $productCollectionFactory;
         $this->customerFactory = $customerFactory;
         $this->customer = $customers;
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheFrontendPool = $cacheFrontendPool;
         parent::__construct($context);
     }
 
@@ -151,6 +165,51 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
+     * Method setConfig
+     *
+     * @param string $group   group
+     * @param string $field   field
+     * @param string $value   value
+     * @param int    $storeId storeId
+     *
+     * @return void
+     */
+    public function setConfig($group, $field, $value)
+    {
+        $this->writeConfig->save('inferendo_visidea/' . $group . '/' . $field, $value);
+    }
+
+    /**
+     * Method flushCache
+     *
+     * @return void
+     */
+    public function flushCache()
+    {
+    $_types = [
+                'config',
+                'layout',
+                'block_html',
+                'collections',
+                'reflection',
+                'db_ddl',
+                'eav',
+                'config_integration',
+                'config_integration_api',
+                'full_page',
+                'translate',
+                'config_webservice'
+                ];
+    
+        foreach ($_types as $type) {
+            $this->cacheTypeList->cleanType($type);
+        }
+        foreach ($this->cacheFrontendPool as $cacheFrontend) {
+            $cacheFrontend->getBackend()->clean();
+        }
+    }
+
+    /**
      * Method getReturnUrl
      *
      * @param string $path path
@@ -171,6 +230,26 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $token_id = $this->getConfig('general', 'private_token');
         return $this->getReturnUrl('visidea/csv/export/token_id/' . $token_id);
+    }
+
+    /**
+     * Method getPrivateToken
+     *
+     * @return string         return private_token
+     */
+    public function getPrivateToken()
+    {
+        return $this->getConfig('general', 'private_token');
+    }
+
+    /**
+     * Method getPublicToken
+     *
+     * @return string         return public_token
+     */
+    public function getPublicToken()
+    {
+        return $this->getConfig('general', 'public_token');
     }
 
     /**
