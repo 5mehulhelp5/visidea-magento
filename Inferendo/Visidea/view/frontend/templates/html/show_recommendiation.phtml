@@ -117,7 +117,7 @@ if ($helper->isEnable()):
                             '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
                             '                   <span class="price-container price-final_price tax weee">'+
                             '                       <span class="price-label">As low as</span>'+
-                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ item.market_price.toFixed(2) +' €</span></span></span>'+
+                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ visidea.format_currency(item.price) +'</span></span></span>'+
                             '                   </span>'+
                             '               </div>'+
                             '           </div>'+

@@ -197,7 +197,7 @@ class VisideaMagento {
             .visidea-visualsearch .visidea__product:nth-child(2n+1){
                 clear:left;
             }
-            @media only screen and(min-width: 768px) {
+            @media only screen and (min-width: 768px) {
                 .visidea-visualsearch__container {
                     display: flex;
                 }
@@ -216,7 +216,7 @@ class VisideaMagento {
                     margin: 0;
                 }
             }
-            @media only screen and(min-width: 1024px) {
+            @media only screen and (min-width: 1024px) {
                 .visidea-visualsearch .visidea__product {
                     width:25%;
                 }
@@ -270,6 +270,9 @@ class VisideaMagento {
             //console.log('wait');
             await new Promise(r => setTimeout(r,10))
         }
+
+        if (!this.visidea.conf.has_visualseach)
+            return;
 
         var html = '<div class="visidea-visualsearch-icon"><a href="javascript:void(0)" onclick="visideaMagento.showVisualSearch()"><img src="https://cdn.visidea.ai/imgs/icons/svg/visidea_camera.svg"></a></div>';
 
@@ -627,7 +630,7 @@ class VisideaMagento {
             '        <div class="visidea__product-caption">',
             '            <p class="visidea__product-heading"><a href="' + link +'">' + title + '</a></p>',
             '            <p class="visidea__product-brand"><a href="' + link +'">' + brand + '</a></p>',
-            '            <p class="visidea__product-price"><strong>&euro; ' + price + '</strong></p>',
+            '            <p class="visidea__product-price"><strong>' + this.visidea.format_currency(price) + '</strong></p>',
             // '            <a href="' + link +'" class="visidea__product-link btn btn-primary" role="button">See Details</a></p>',
             '        </div>',
             '    </div>',
@@ -648,7 +651,7 @@ class VisideaMagento {
     {
         var styleSheet = document.createElement("style")
         styleSheet.type = "text/css"
-        styleSheet.innerText = styles
+        styleSheet.textContent = styles
         document.head.appendChild(styleSheet)
     }
 
