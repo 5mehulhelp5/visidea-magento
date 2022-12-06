@@ -12,7 +12,7 @@
     </head>
     <body>
         <referenceContainer name="content">
-            <block class="Inferendo\Visidea\Block\Info" name="md_js_manager"  template="Inferendo_Visidea::html/show_recommendiation.phtml"/>
+            <block class="Inferendo\Visidea\Block\Info" after="-" name="md_js_manager" template="Inferendo_Visidea::html/show_recommendiation.phtml"/>
         </referenceContainer>
     </body>
 </page>

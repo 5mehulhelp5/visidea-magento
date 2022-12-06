@@ -116,8 +116,7 @@ if ($helper->isEnable()):
                             '               </strong>'+
                             '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
                             '                   <span class="price-container price-final_price tax weee">'+
-                            '                       <span class="price-label">As low as</span>'+
-                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper "><span class="price">'+ visidea.format_currency(item.price) +'</span></span></span>'+
+                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper"><span class="price">'+ visidea.format_currency(item.price) +'</span></span></span>'+
                             '                   </span>'+
                             '               </div>'+
                             '           </div>'+
@@ -139,10 +138,6 @@ if ($helper->isEnable()):
                 window.visideaMagento = new VisideaMagento(visidea, '<?= $website ?>', '<?= $public_token ?>');
                 var user_id = window.visideaMagento.setUser(<?= $user_id; ?>);
                 console.log(user_id)
-
-                // <?php if(isset($old_user_id)): ?>
-                //     visidea.merge_users("<?= $old_user_id; ?>","<?= $user_id; ?>");
-                // <?php endif; ?>
 
                 <?php if($page == 'product'): ?>
                 visidea.item_view("<?= $product_id ?>",user_id);
