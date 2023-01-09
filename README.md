@@ -16,6 +16,7 @@ To publish the plugin on the Magento module store follow this procedure:
     `
     cd Inferendo/Visidea
     zip -r ../../inferendo_visidea-1.3.0.zip .
+    cd ../..
     `
 
 2. remove mac file from zip:

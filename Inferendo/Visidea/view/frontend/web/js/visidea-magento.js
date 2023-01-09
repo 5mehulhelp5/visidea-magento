@@ -94,7 +94,7 @@ class VisideaMagento {
             .visidea-visualsearch {
                 display:none;
                 background:white;
-                position:absolute;
+                position:fixed;
                 z-index: 99999;
                 top:10px;
                 bottom:10px;
@@ -276,8 +276,8 @@ class VisideaMagento {
 
         var html = '<div class="visidea-visualsearch-icon"><a href="javascript:void(0)" onclick="visideaMagento.showVisualSearch()"><img src="https://cdn.visidea.ai/imgs/icons/svg/visidea_camera.svg"></a></div>';
 
-        if (this.visidea.conf.visualsearch && this.visidea.conf.visualsearch.show_after != '')
-            jQuery(elem.show_after).after(html);
+        if (this.visidea.conf.visualsearch_show_after && this.visidea.conf.visualsearch_show_after != '')
+            jQuery(this.visidea.conf.visualsearch_show_after).after(html);
         else
             jQuery('.block-search').before(html);
 
