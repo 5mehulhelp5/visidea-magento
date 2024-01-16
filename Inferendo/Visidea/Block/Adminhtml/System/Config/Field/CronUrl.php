@@ -79,6 +79,6 @@ class CronUrl extends \Magento\Config\Block\System\Config\Form\Field
      */
     public function isEnabled()
     {
-        return $this->helper->isEnable();
+        return $this->helper->isEnabled();
     }
 }

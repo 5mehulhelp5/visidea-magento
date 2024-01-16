@@ -60,7 +60,7 @@ class Export extends \Magento\Framework\App\Action\Action
         $data = $this->request->getParams();
         if (isset($data['token_id'])
             && $data['token_id'] == $this->helper->getConfig('general', 'private_token')
-            && $this->helper->isEnable()
+            && $this->helper->isEnabled()
         ) {
             $this->helper->createExportFolder();
 

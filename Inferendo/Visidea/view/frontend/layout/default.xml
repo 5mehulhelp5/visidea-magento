@@ -6,13 +6,14 @@
  */
 -->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-    <head>
+   <head>
+        <css src="//cdn.visidea.ai/visual-search/css/main.css" src_type="url" />
         <css src="Inferendo_Visidea::css/slick.css" />
         <css src="Inferendo_Visidea::css/slick-theme.css" />
     </head>
     <body>
         <referenceContainer name="content">
-            <block class="Inferendo\Visidea\Block\Info" after="-" name="md_js_manager" template="Inferendo_Visidea::html/show_recommendiation.phtml"/>
-        </referenceContainer>
+            <block class="Inferendo\Visidea\Block\Info" after="-" name="vs_init" template="Inferendo_Visidea::html/init_visidea.phtml"/>
+        </referenceContainer>        
     </body>
 </page>

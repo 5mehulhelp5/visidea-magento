@@ -1,6 +1,6 @@
 <?php
 $helper = $this->helper('Inferendo\Visidea\Helper\Data');
-if ($helper->isEnable()):
+if ($helper->isEnabled()):
     $public_token = $helper->getConfig('general','public_token');
     $website = $helper->getConfig('general','website');
     $currentFullAction = $block->getRequest()->getFullActionName();
@@ -16,6 +16,7 @@ if ($helper->isEnable()):
         $product_id = 0;
     }
 
+    $page = 'other';
     switch ($currentFullAction){
         case 'catalog_product_view':
             $page = 'product';
@@ -43,7 +44,7 @@ if ($helper->isEnable()):
 
     <script type="text/javascript">
 
-        require(["Visidea", "VisideaMagento", "jquery", "Slick"], function (Visidea, VisMagento, $) {
+        require(["Visidea", "VisideaMagento", "jquery", "Slick"], function (Visidea, VisMagento, $, Slick) {
 
             var whenExists = function(name, callback) {
                 var interval = 10; // ms
@@ -57,7 +58,7 @@ if ($helper->isEnable()):
             }
 
             function show_slider(){
-                $('.products-rec').slick({
+                $('.visidea-products').slick({
                     slidesToShow: 5,
                     slidesToScroll: 1,
                     centerMode: false,
@@ -116,7 +117,7 @@ if ($helper->isEnable()):
                             '               </strong>'+
                             '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
                             '                   <span class="price-container price-final_price tax weee">'+
-                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper"><span class="price">'+ visidea.format_currency(item.price) +'</span></span></span>'+
+                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper"><span class="price">'+ window.visidea.format_currency(item.price) +'</span></span></span>'+
                             '                   </span>'+
                             '               </div>'+
                             '           </div>'+
@@ -132,49 +133,52 @@ if ($helper->isEnable()):
             }
 
 
-            var visidea = new Visidea.Api('<?= $website ?>', '<?= $public_token ?>');
-            whenExists("visidea.conf", function() {
+            window.Visidea = Visidea;
+            window.visidea = new Visidea.Api('<?= $website ?>', '<?= $public_token ?>');
+            whenExists("window.visidea.conf.has_visualsearch", function() {
 
-                window.visideaMagento = new VisideaMagento(visidea, '<?= $website ?>', '<?= $public_token ?>');
+                window.visideaMagento = new VisideaMagento(window.visidea, '<?= $website ?>', '<?= $public_token ?>');
                 var user_id = window.visideaMagento.setUser(<?= $user_id; ?>);
-                console.log(user_id)
 
                 <?php if($page == 'product'): ?>
-                visidea.item_view("<?= $product_id ?>",user_id);
+                    window.visidea.item_view("<?= $product_id ?>",user_id);
                 <?php endif; ?>
 
-                var cont = 1;
-                var n_rec_type = 0;
+                <?php if($page != 'other'): ?>
 
-                visidea.conf.<?= $page; ?>.forEach(function(item) {
-                    if (item.show)
-                        n_rec_type++;
-                });
+                    var cont = 1;
+                    var n_rec_type = 0;
 
-                visidea.conf.<?= $page; ?>.forEach(function(item) {
-                    if (item.show) {
-                        var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
-                            '                <div id="visidea-products' + cont + '" class="visidea products-rec">' +
-                            '                </div>' +
-                            '            </div>';
-                        document.getElementById("visidea-cont").innerHTML += myhtml;
+                    window.visidea.conf.<?= $page; ?>.forEach(function(item) {
+                        if (item.show)
+                            n_rec_type++;
+                    });
 
-                        visidea.recommend(item.algo, user_id, "<?= $product_id; ?>", [], item.n,
-                            function (res) {
-                                show_product(res);
-                                itemsProcessed++;
-                                console.log('itemsProcessed:'+itemsProcessed)
-                                console.log('n_rec_type:'+n_rec_type)
-                                if (itemsProcessed == n_rec_type) {
-                                    show_slider();
-                                }
-                            }, []);
-                        cont++;
-                    }
-                });
+                    window.visidea.conf.<?= $page; ?>.forEach(function(item) {
+                        if (item.show) {
+                            var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
+                                '                <div id="visidea-products' + cont + '" class="visidea visidea-products products-rec">' +
+                                '                </div>' +
+                                '            </div>';
+                            document.getElementById("visidea-cont").innerHTML += myhtml;
+
+                            window.visidea.recommend(item.algo, user_id, "<?= $product_id; ?>", [], item.n,
+                                function (res) {
+                                    show_product(res);
+                                    itemsProcessed++;
+                                    console.log('itemsProcessed:'+itemsProcessed)
+                                    console.log('n_rec_type:'+n_rec_type)
+                                    if (itemsProcessed == n_rec_type) {
+                                        show_slider();
+                                    }
+                                }, []);
+                            cont++;
+                        }
+                    });
+
+                <?php endif; ?>
 
             });
-
 
         });
     </script>

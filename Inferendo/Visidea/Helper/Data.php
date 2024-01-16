@@ -47,6 +47,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $scopeConfig;
     protected $writeConfig;
     protected $file;
+    protected $dir;
     protected $quoteFactory;
     protected $quoteModel;
     protected $quoteManagement;
@@ -141,7 +142,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @return int return if the module if enabled
      */
-    public function isEnable()
+    public function isEnabled()
     {
         return 1;
     }

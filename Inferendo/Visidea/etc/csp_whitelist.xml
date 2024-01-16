@@ -4,17 +4,30 @@
         <policy id="script-src">
             <values>
                 <value id="host-base" type="host"></value>
-                <value id="visidea-cdn" type="host">https://cdn.visidea.ai</value>
-                <value id="visidea-api" type="host">https://api.visidea.ai</value>
-                <value id="jsdelivr" type="host">http://cdn.jsdelivr.net</value>
+                <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
+                <value id="visidea-api" type="host">api.visidea.ai</value>
+                <value id="jsdelivr" type="host">cdn.jsdelivr.net</value>
+            </values>
+        </policy>
+        <policy id="style-src">
+            <values>
+                <value id="host-base" type="host"></value>
+                <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
             </values>
         </policy>
         <policy id="connect-src">
             <values>
                 <value id="host-base" type="host"></value>
-                <value id="visidea-api" type="host">https://api.visidea.ai</value>
+                <value id="visidea-api" type="host">api.visidea.ai</value>
+                <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
                 <value id="visidea-blob" type="host">blob:</value>
             </values>
         </policy>
+        <policy id="img-src">
+            <values>
+              <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
+              <value id="visidea-data" type="host">data:</value>
+            </values>
+          </policy>
     </policies>
 </csp_whitelist>

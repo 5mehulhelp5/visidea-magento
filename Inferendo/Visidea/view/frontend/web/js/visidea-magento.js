@@ -96,10 +96,10 @@ class VisideaMagento {
                 background:white;
                 position:fixed;
                 z-index: 99999;
-                top:10px;
-                bottom:10px;
-                right:10px;
-                left:10px;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
             }
             .visidea-visualsearch p {
                 margin:0;
@@ -108,131 +108,24 @@ class VisideaMagento {
                 color:black;
             }
             .visidea-visualsearch__exit {
+                z-index: 99999;
+                position: absolute;
+                right: 0;
                 float:right;
                 background-image:url("https://cdn.visidea.ai/imgs/icons/svg/visidea_cancelcircle.svg");
-                background-color:#fff;
                 width:30px;
                 height:30px;
-                margin:10px;
+                margin:13px;
             }
             .visidea-visualsearch__exit:hover {
                 cursor: pointer;
             }
-            .visidea-visualsearch__upload {
-                border: dashed 2px #000;
-                margin: 15px;
-                padding: 15px;
-                text-align:center;
-            }
-            .visidea-visualsearch__upload-photo {
-                background:url("https://cdn.visidea.ai/imgs/icons/svg/visidea_camera.svg");
-                width:40px;
-                height:40px;
-                margin:auto;
-                margin-botton:15px;
-            }
-            .visidea-visualsearch__upload-photo:hover {
-                cursor: pointer;
-            }
-            .visidea-visualsearch__upload-input {
-                width: 0px;
-                height: 0px;
-                overflow: hidden;
-                display: none;
-            }
-            .visidea-visualsearch__container {
-                display: block;
-                margin: 15px;
-                margin-top: 0px;
-            }
-            .visidea-visualsearch__nav {
-                display: block;
-                width: 100%;
-                margin-right: 15px;
-                margin-bottom: 15px;
-            }
-            .visidea-visualsearch__nav-content {
-                position: relative;
-                display: block;
-                width: 150px;
-                margin: auto;
-            }
-            .visidea-visualsearch__content {
-                display:flex;
-                flex-direction: column;
-                width:100%;
-                overflow:auto;
-            }
-            .visidea-visualsearch__upload-image {
-                width: 100%!important;
-            }
-            #visidea-visualsearch__upload-canvas {
-                position: absolute;
-                top: 0;
-                left: 0;
-                margin-top: 0;
-                margin-left: 0;
-            }
-            #visidea-visualsearch__upload-canvas-crop {
-                width: 800px;
-                height: 800px;
-                display:none;
-            }
-            .visidea-visualsearch .visidea__product {
-                width:50%;
-                float:left;
-                margin-bottom:15px;
-                line-height: 1.5;
-            }
-            .visidea-visualsearch .visidea__product a {
-                display: flex;
-                justify-content: center;
-            }
-            .visidea-visualsearch img.visidea__product-image {
-                max-width: 100%;
-            }
-            .visidea-visualsearch .visidea__product-caption {
-                text-align: center;
-            }
-            .visidea-visualsearch .visidea__product:nth-child(2n+1){
-                clear:left;
-            }
             @media only screen and (min-width: 768px) {
-                .visidea-visualsearch__container {
-                    display: flex;
-                }
-                .visidea-visualsearch__upload-photo {
-                    width:150px;
-                    height:150px;
-                }
-                .visidea-visualsearch__nav {
-                    display: flex;
-                    flex-direction: column;
-                    width: 220px;
-                }
-                .visidea-visualsearch__nav-content {
-                    display: inline-block;
-                    width: 220px;
-                    margin: 0;
+                .visidea-visualsearch__exit {
+                    margin: 10px;
                 }
             }
             @media only screen and (min-width: 1024px) {
-                .visidea-visualsearch .visidea__product {
-                    width:25%;
-                }
-                .visidea-visualsearch .visidea__product:nth-child(2n+1){
-                    clear:none;
-                }
-                .visidea-visualsearch .visidea__product:nth-child(4n+1){
-                    clear:left;
-                }
-                .visidea-visualsearch__upload {
-                    margin: 50px;
-                    padding: 50px;
-                }
-                .visidea-visualsearch__container {
-                    margin: 50px;
-                }
             }
             `
         );
@@ -277,13 +170,15 @@ class VisideaMagento {
 
     async initializeVisualSearch()
     {
+        console.log('initializeVisualSearch')
+        console.log(this.visidea)
         // Wait for 'visidea.conf' to exist
         while (!this.visidea.conf) {
             //console.log('wait');
             await new Promise(r => setTimeout(r,10))
         }
 
-        if (!this.visidea.conf.has_visualseach)
+        if (!this.visidea.conf.has_visualsearch)
             return;
 
         var icon = '<svg id="Livello_1" data-name="Livello 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M32.41082,7.60858a17.528,17.528,0,1,0-2.61108,26.92279,3.41827,3.41827,0,1,0-1.25586-1.56732A15.52619,15.52619,0,1,1,35.34149,22.4455a1.0004,1.0004,0,1,0,1.97656.31054A17.60924,17.60924,0,0,0,32.41082,7.60858Zm-1.627,23.03027a1.40822,1.40822,0,0,1,.918-.33984c.03613,0,.07324.002.11035.00488a1.39761,1.39761,0,0,1,.96484.48926,1.41453,1.41453,0,0,1-.15332,1.99317v.001a1.41428,1.41428,0,0,1-1.83984-2.14844Z"/><path d="M19.82728,16.32285a3.90561,3.90561,0,1,0,3.90564,3.90564A3.90558,3.90558,0,0,0,19.82728,16.32285Zm0,5.3974a1.49179,1.49179,0,1,1,1.49182-1.49176A1.49183,1.49183,0,0,1,19.82728,21.72025Z"/><path d="M27.16382,13.33341H24.04664l-1.81348-1.49414a2.00026,2.00026,0,0,0-1.27344-.458H18.6941a1.99318,1.99318,0,0,0-1.27149.457l-1.8164,1.49511H12.491a2.0026,2.0026,0,0,0-2,2v9.79a2.0026,2.0026,0,0,0,2,2H27.16382a2.0026,2.0026,0,0,0,2-2v-9.79A2.0026,2.0026,0,0,0,27.16382,13.33341Zm-3.10546.001h0Zm3.10546,11.78906H12.491v-9.79h3.11524a2.00523,2.00523,0,0,0,1.27246-.45605l1.81543-1.49609h2.2666l1.81543,1.49609a2.00218,2.00218,0,0,0,1.27148.45605h3.11621Z"/></svg>';
@@ -296,104 +191,21 @@ class VisideaMagento {
 
         var html = '<div class="visidea-visualsearch" id="visidea-visualsearch">';
         html = html + '<a class="visidea-visualsearch__exit" onclick="visideaMagento.hideVisualSearch()"></a>';
-        html = html + '<div class="visidea-visualsearch__upload" onclick="jQuery(\'.visidea-visualsearch__upload-input\').trigger(\'click\');" ondrop="visideaMagento.dropHandler(event);" ondragover="visideaMagento.dragOverHandler(event);"><div class="visidea-visualsearch__upload-photo"></div>Upload or snap a photo</div>';
-        html = html + '<input class="visidea-visualsearch__upload-input" type="file" id="file" accept="image/*" onChange="visideaMagento.uploadFile(event)"/>';
-        html = html + '<div class="visidea-visualsearch__container"><div class="visidea-visualsearch__nav"><div class="visidea-visualsearch__nav-content">';
-        html = html + '<img id="visidea-visualsearch__upload-image" class="visidea-visualsearch__upload-image" src="" />';
-        html = html + '<canvas id="visidea-visualsearch__upload-canvas"/>';
-        html = html + '</div></div>';
-        html = html + '<div class="visidea-visualsearch__content"><div class="visidea-visualsearch__content-hook"></div></div></div>';
-        html = html + '<canvas id="visidea-visualsearch__upload-canvas-crop"/>';
+        html = html + '<div id="visidea-vs-root" website="'+this.shop+'" public_token="'+this.public_token+'"></div>';      
         html = html + '</div>';
 
         jQuery('body').append(html);
-        this.bindCanvasEvent();
-        this.bindResizeEvent();
 
-        this.recreateSession();
+        this.loadScript('https://cdn.visidea.ai/visual-search/js/main.js?ver=1.4.0');
 
-    }
-
-    dragOverHandler(ev)
-    {
-        // Prevent default behavior (Prevent file from being opened)
-        ev.preventDefault();
-    }
-    
-    dropHandler(ev)
-    {
-        // Prevent default behavior (Prevent file from being opened)
-        ev.preventDefault();
-      
-        var self = this;
-    
-        if (ev.dataTransfer.items) {
-          // Use DataTransferItemList interface to access the file(s)
-          [...ev.dataTransfer.items].forEach((item, i) => {
-            // If dropped items aren't files, reject them
-            if (item.kind === 'file') {
-              const file = item.getAsFile();
-              // console.log(`1 file[${i}].name = ${file.name}`);
-              var url = URL.createObjectURL(file);
-              jQuery('.visidea-visualsearch__upload-image').attr('src', url);
-              this.getBase64(file).then(
-                jpg => {
-                    sessionStorage.setItem('visidea.image', jpg);
-                    this.visidea.visualsearch(jpg, function(hotpoints){
-                        self.hotpoints = hotpoints.detections;
-                        self.drawHotpoints(self.hotpoints);
-                        if (self.hotpoints.length)
-                            self.selectHotpoint(self.hotpoints[0]);  
-                    });
-                }
-              );
-            }
-          });
-        } else {
-          // Use DataTransfer interface to access the file(s)
-          [...ev.dataTransfer.files].forEach((file, i) => {
-            // console.log(`2 file[${i}].name = ${file.name}`);
-            var url = URL.createObjectURL(file);
-            jQuery('.visidea-visualsearch__upload-image').attr('src', url);
-            this.getBase64(file).then(
-              jpg => {
-                  sessionStorage.setItem('visidea.image', jpg);
-                  this.visidea.visualsearch(jpg, function(hotpoints){
-                      self.hotpoints = hotpoints.detections;
-                      self.drawHotpoints(self.hotpoints);
-                      if (self.hotpoints.length)
-                          self.selectHotpoint(self.hotpoints[0]);
-                  });
-              }
-            );
-          });
-        }
-    }
-    
+    }    
 
     showVisualSearch()
     {
         jQuery('.visidea-visualsearch').css('display','block');
         jQuery('html').scrollTop(0);
-        this.fixContentHeight();
+        // this.fixContentHeight();
         jQuery('body').css('overflow-y','hidden');
-    }
-
-    fixContentHeight()
-    {
-        var width = jQuery('html').width();
-        var height = jQuery('.visidea-visualsearch').height();
-        var topheight = jQuery('.visidea-visualsearch__upload').height();
-        var contentheight = height-topheight-210;
-        if (width >= 768 && width < 1024) {
-            contentheight += 120;
-        }
-        if (width < 768) {
-            var navheight = jQuery('.visidea-visualsearch__nav').height();
-            contentheight -= navheight;
-            contentheight += 110;
-        }
-        jQuery('.visidea-visualsearch__content').css('height',contentheight+'px');
     }
 
     hideVisualSearch()
@@ -405,249 +217,6 @@ class VisideaMagento {
         url.searchParams.delete('visidea');
         url.searchParams.delete('visideaitem');
         window.history.pushState({}, '', url);
-    }
-
-    getBase64(file)
-    {
-        return new Promise(
-            (resolve, reject) => 
-            {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            }
-        );
-    }
-
-    uploadFile(event)
-    {
-        var self = this;
-        var file = event.target.files[0];
-        if (file) {
-            var url = URL.createObjectURL(file);
-            jQuery('.visidea-visualsearch__upload-image').attr('src', url);
-            this.getBase64(file).then(
-                jpg => 
-                {
-                    sessionStorage.setItem('visidea.image', jpg);
-                    this.visidea.visualsearch(
-                        jpg, function (hotpoints) {
-                            self.hotpoints = hotpoints.detections;
-                            self.drawHotpoints(self.hotpoints);
-                            if (self.hotpoints.length)
-                                self.selectHotpoint(self.hotpoints[0]);
-                        }
-                    );
-                }
-            );
-        }
-    }
-
-    bindCanvasEvent()
-    {
-        var self = this;
-        jQuery('#visidea-visualsearch__upload-canvas').click(
-            function (event) {
-                var elemLeft = jQuery('#visidea-visualsearch__upload-canvas').offset().left,
-                    elemTop = jQuery('#visidea-visualsearch__upload-canvas').offset().top;
-
-                var x = event.pageX - elemLeft,
-                    y = event.pageY - elemTop;
-
-                var image = document.getElementById("visidea-visualsearch__upload-image");
-                var image_width = image.width;
-                var image_height = image.height;
-
-                // Collision detection between clicked offset and element.
-                self.hotpoints.forEach(
-                    function (element) {
-                        var top = (element.ycenter - element.height / 2) * self.resizeFactor;
-                        var left = (element.xcenter - element.width / 2) * self.resizeFactor;
-                        var height = element.height * self.resizeFactor;
-                        var width = element.width * self.resizeFactor;
-                        var centerx = left + width/2;
-                        var centery = top + height/2;
-                        // if (y > top && y < top + height
-                        //     && x > left && x < left + width) {
-                        if (y > centery-20 && y < centery+20 && x > centerx-20 && x < centerx+20) {
-                            // alert('clicked an element');
-                            self.selectHotpoint(element);
-                        }
-                    }
-                );
-            }
-        );
-    }
-
-    bindResizeEvent()
-    {
-        var self = this;
-        jQuery(window).resize(
-            function () {
-                self.fixContentHeight();
-            }
-        );
-    }
-
-    recreateSession()
-    {
-        var self = this;
-        var queryString = window.location.search;
-        var urlParams = new URLSearchParams(queryString);
-        var visidea = urlParams.get('visidea');
-        var visideaitem = urlParams.get('visideaitem');
-        if (visidea == 'visualsearch') {
-            var jpg = sessionStorage.getItem('visidea.image');
-            this.showVisualSearch();
-            jQuery('.visidea-visualsearch__upload-image').attr('src', jpg);
-            var visideaitem_center = visideaitem.split(',');
-
-            this.visidea.visualsearch(
-                jpg, function (hotpoints) {
-                    self.fixContentHeight();
-                    self.hotpoints = hotpoints.detections;
-                    self.drawHotpoints(self.hotpoints);
-                    var selectedItem = 0;
-                    for (var i in self.hotpoints) {
-                        if (self.hotpoints[i].xcenter == visideaitem_center[0] && self.hotpoints[i].ycenter == visideaitem_center[1])
-                        selectedItem = i;
-                    }
-                    if (self.hotpoints.length)
-                        self.selectHotpoint(self.hotpoints[selectedItem]);
-                }
-            );
-        }
-    }
-
-    drawHotpoints(hotpoints)
-    {
-        var $img = jQuery('#visidea-visualsearch__upload-image');
-        var self = this;
-
-        var image = document.getElementById("visidea-visualsearch__upload-image");
-        var dim = (image.width > image.height) ? image.width : image.height;
-        // console.log(image.width);
-        // console.log(image.height);
-        // console.log(dim);
-        // console.log(image.naturalWidth)
-        // console.log(image.naturalHeight)
-
-        var canvas = document.getElementById("visidea-visualsearch__upload-canvas");
-        canvas.width = dim;
-        canvas.height = dim;
-        // console.log(canvas.width);
-        // console.log(canvas.height);
-        var resizeFactor = image.width/image.naturalWidth;
-        this.resizeFactor = resizeFactor;
-
-        // canvas.width = dim+'px';
-        // canvas.height = dim+'px';
-        var canvas = document.getElementById("visidea-visualsearch__upload-canvas");
-        var ctx = canvas.getContext("2d");
-        // ctx.fillStyle = "#FFFFFF";
-        // ctx.fillRect(0, 0, 150, 75);
-        hotpoints.forEach(
-            function (element) {
-                // console.log(element.xcenter)
-                // console.log(element.ycenter)
-                self.drawCircle(ctx, element.xcenter*resizeFactor, element.ycenter*resizeFactor, 5, 'white', 'black', 2);
-            }
-        );
-
-    }
-
-    drawCircle(ctx, x, y, radius, fill, stroke, strokeWidth)
-    {
-        const circle = new Path2D();
-        circle.arc(x, y, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = fill;
-        ctx.fill(circle);
-        ctx.stroke_style = stroke;
-        ctx.lineWidth = strokeWidth;
-        ctx.stroke(circle);
-    }
-
-    selectHotpoint(elem)
-    {
-        // console.log(elem)
-
-        var image = new Image();
-        image.src = jQuery('.visidea-visualsearch__upload-image').attr('src');
-
-        var self = this;
-
-        image.onload = function () {
-            // console.log(image.width)
-            // console.log(image.height)
-            // console.log(elem)
-            // console.log(elem.xcenter-elem.width/2)
-            // console.log(elem.ycenter-elem.height/2)
-            // console.log(elem.width)
-            // console.log(elem.height)
-            const canvas = document.getElementById('visidea-visualsearch__upload-canvas-crop');
-            canvas.width = elem.width;
-            canvas.height = elem.height;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(image, (elem.xcenter-elem.width/2), (elem.ycenter-elem.height/2), elem.width, elem.height, 0,0, elem.width, elem.height);
-            // let imageData = ctx.getImageData(0, 0, image.width*elem.w, image.height*elem.h);
-            // console.log(imageData)
-            var jpg = canvas.toDataURL("image/jpeg");
-            // console.log(jpg)
-            // ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            self.visualrecommend(jpg, elem.class);
-        }
-
-        const url = new URL(window.location);
-        url.searchParams.set('visidea', 'visualsearch');
-        url.searchParams.set('visideaitem', elem.xcenter+','+elem.ycenter);
-        window.history.pushState({}, '', url);
-
-    }
-
-    visualrecommend(jpg, detected_class)
-    {
-        var self = this;
-        var displayVRecommendations = function (res) {
-            jQuery('.visidea-visualsearch__content').scrollTop(0);
-            jQuery('.visidea-visualsearch__content-hook').html('');
-
-            if (res[0] !== undefined) {
-                var recomms_rows = res.map(
-                    vals => self.renderProductVisual(vals['name'], vals['brand_name'], vals['url'], vals['images'][0], vals['price'])
-                );
-                jQuery('.visidea-visualsearch__content-hook').append(recomms_rows.join(''));
-            }
-        }
-        this.visidea.visualrecommend(jpg, 100, detected_class, displayVRecommendations);
-    }
-
-    renderProductVisual(title, brand, link, image, price)
-    {
-        if (!title)
-            title = "";
-        if (!brand)
-            brand = "";
-        if (!link)
-            link = "";
-        if (!image)
-            image = "";
-        if (!price)
-            price = "";
-
-        return  [
-            '    <div class="visidea__product">',
-            '        <a href="' + link +'"><img src="' + image +'" class="visidea__product-image" alt="" /></a>',
-            '        <div class="visidea__product-caption">',
-            '            <p class="visidea__product-heading"><a href="' + link +'">' + title + '</a></p>',
-            '            <p class="visidea__product-brand"><a href="' + link +'">' + brand + '</a></p>',
-            '            <p class="visidea__product-price"><strong>' + this.visidea.format_currency(price) + '</strong></p>',
-            // '            <a href="' + link +'" class="visidea__product-link btn btn-primary" role="button">See Details</a></p>',
-            '        </div>',
-            '    </div>',
-            ].join('');
     }
 
     loadStyle(src)
@@ -662,10 +231,10 @@ class VisideaMagento {
 
     loadCss(styles)
     {
-        var styleSheet = document.createElement("style")
-        styleSheet.type = "text/css"
-        styleSheet.textContent = styles
-        document.head.appendChild(styleSheet)
+        var styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerHTML = styles;
+        document.head.appendChild(styleSheet);
     }
 
     loadScript(src)
