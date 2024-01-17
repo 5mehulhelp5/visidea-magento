@@ -14,6 +14,7 @@
 namespace Inferendo\Visidea\Cron;
 
 use Inferendo\Visidea\Helper\Data;
+use Psr\Log\LoggerInterface;
 
 /**
  * Export class
@@ -30,6 +31,7 @@ class Export
 
     protected $request;
     protected $helper;
+    protected $logger;
 
     /**
      * Method __construct
@@ -39,9 +41,11 @@ class Export
      * @return void no return
      */
     public function __construct(
-        Data $helper
+        Data $helper,
+        LoggerInterface $logger
     ) {
         $this->helper = $helper;
+        $this->logger = $logger;
     }
 
     /**
@@ -51,6 +55,8 @@ class Export
      */
     public function execute()
     {
+
+        $this->logger->info('Visidea cron started');
 
         $this->helper->createExportFolder();
 
@@ -125,6 +131,7 @@ class Export
             }
 
             $this->helper->generateUserCsv($dataUserCsv);
+            
         }
 
         $productCollection = $this->helper->getProductCollection();
@@ -133,100 +140,111 @@ class Export
             foreach ($productCollection as $product) {
                 $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
                 $_product = $objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
-                $stockState = $objectManager->get('\Magento\CatalogInventory\Api\StockStateInterface');
-                $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                $visibility = $_product->getAttributeText('visibility')->getText();
 
-                $images = $_product->getMediaGalleryImages();
-                $productImages = [];
-                foreach ($images as $child) {
-                    $productImages[] = $child->getUrl();
-                }
-                $productStock = $stockState->getStockQty($product->getId(), $product->getStore()->getWebsiteId());
+                if ($visibility !== 'Not Visible Individually') {
 
-                $simplePrice = 0;
-                $finalPrice = 0;
-                $_savingPercent = 0;
-
-                if ($_product->getTypeId() == "configurable") {
-                    $_children = $_product->getTypeInstance()->getUsedProducts($_product);
-                    $simplePrice = $_children[0]->getPrice();
-                    $finalPrice = $_children[0]->getFinalPrice();
-                    foreach ($_children as $child) {
-                        $productStock += $stockState->getStockQty($child->getId(), $product->getStore()->getWebsiteId());
+                    $stockState = $objectManager->get('\Magento\CatalogInventory\Api\StockStateInterface');
+                    $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+    
+                    $images = $_product->getMediaGalleryImages();
+                    $productImages = [];
+                    foreach ($images as $child) {
+                        $productImages[] = $child->getUrl();
                     }
-                } elseif ($_product->getTypeId() == "grouped") {
-                    $lowest_stock = -1;
-                    $simulationPrice = 0;
-                    $simulationFinalPrice = 0;
-                    $associatedProducts = $_product->getTypeInstance(true)->getAssociatedProducts($_product);
-                    foreach ($associatedProducts as $childProduct) {
-                        $simulationPrice += $childProduct->getPrice();
-                        $simulationFinalPrice += $childProduct->getFinalPrice();
-                        $child_stock = $stockState->getStockQty($childProduct->getId(), $product->getStore()->getWebsiteId());
-                        if ($child_stock < $lowest_stock || $lowest_stock == -1)
-                            $lowest_stock = $child_stock;
+                    $productStock = $stockState->getStockQty($product->getId(), $product->getStore()->getWebsiteId());
+    
+                    $simplePrice = 0;
+                    $finalPrice = 0;
+                    $_savingPercent = 0;
+    
+                    if ($_product->getTypeId() == "configurable") {
+                        $_children = $_product->getTypeInstance()->getUsedProducts($_product);
+                        $simplePrice = $_children[0]->getPrice();
+                        $finalPrice = $_children[0]->getFinalPrice();
+                        foreach ($_children as $child) {
+                            $productStock += $stockState->getStockQty($child->getId(), $product->getStore()->getWebsiteId());
+                        }
+                    } elseif ($_product->getTypeId() == "grouped") {
+                        $lowest_stock = -1;
+                        $simulationPrice = 0;
+                        $simulationFinalPrice = 0;
+                        $associatedProducts = $_product->getTypeInstance(true)->getAssociatedProducts($_product);
+                        foreach ($associatedProducts as $childProduct) {
+                            $simulationPrice += $childProduct->getPrice();
+                            $simulationFinalPrice += $childProduct->getFinalPrice();
+                            $child_stock = $stockState->getStockQty($childProduct->getId(), $product->getStore()->getWebsiteId());
+                            if ($child_stock < $lowest_stock || $lowest_stock == -1)
+                                $lowest_stock = $child_stock;
+                        }
+                        $simplePrice = $simulationPrice;
+                        $finalPrice = $simulationFinalPrice;
+                        $productStock = $lowest_stock;
+                    } elseif ($_product->getTypeId() == "bundle") {
+                        $simplePrice = $_product->getPriceInfo()->getPrice('regular_price')->getAmount()->getValue();
+                        $finalPrice = $_product->getPriceInfo()->getPrice('final_price')->getValue();
+                    } else {
+                        $simplePrice = $_product->getPrice();
+                        $finalPrice = $_product->getFinalPrice();
                     }
-                    $simplePrice = $simulationPrice;
-                    $finalPrice = $simulationFinalPrice;
-                    $productStock = $lowest_stock;
-                } elseif ($_product->getTypeId() == "bundle") {
-                    $simplePrice = $_product->getPriceInfo()->getPrice('regular_price')->getAmount()->getValue();
-                    $finalPrice = $_product->getPriceInfo()->getPrice('final_price')->getValue();
-                } else {
-                    $simplePrice = $_product->getPrice();
-                    $finalPrice = $_product->getFinalPrice();
-                }
-
-                $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds());
-                $productCategories = [];
-                if (count($_categoryCollection) > 0) {
-                    foreach ($_categoryCollection as $_category) {
-                        $productCategories[] = $_category->getName();
+    
+                    $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds());
+                    $productCategories = [];
+                    if (count($_categoryCollection) > 0) {
+                        foreach ($_categoryCollection as $_category) {
+                            $productCategories[] = $_category->getName();
+                        }
                     }
+    
+                    $itemId = $product->getId();
+                    $itemName = $product->getName();
+                    $itemBrandId = $product->getManufacturer();
+                    $itemBrandName = $product->getAttributeText('manufacturer');
+                    $itemDescription = $product->getDescription();
+    
+                    if ($finalPrice < $simplePrice) {
+                        $_savingPercent = 100 - round(($finalPrice / $simplePrice) * 100);
+                    }
+    
+                    $itemDiscount = $_savingPercent;
+                    $itemPageIds = implode("|", $product->getCategoryIds());
+                    $itemPageNames = implode("|", $productCategories);
+    
+                    $parentProduct = $objectManager->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')->getParentIdsByChild($itemId);
+                    if (isset($parentProduct[0])) {
+                        $_parentProduct = $objectManager->create('Magento\Catalog\Model\Product')->load($parentProduct[0]);
+                        $itemUrl = $_parentProduct->getProductUrl();
+                    } else if ($product->isVisibleInCatalog() && $product->isVisibleInSiteVisibility()) {
+                        $itemUrl = $product->getProductUrl();
+                    } else {
+                        $itemUrl = null;
+                    }
+    
+                    $itemImages = implode("|", $productImages);
+                    $itemStock = $productStock;
+    
+                    if ($itemUrl != '') {
+                        $item = [];
+                        $item['item_id'] = $itemId;
+                        $item['name'] = $itemName;
+                        $item['description'] = $itemDescription;
+                        $item['brand_id'] = $itemBrandId;
+                        $item['brand_name'] = $itemBrandName;
+                        $item['price'] = round($simplePrice, 2);
+                        $item['market_price'] = round($finalPrice, 2);
+                        $item['discount'] = $itemDiscount;
+                        $item['page_ids'] = $itemPageIds;
+                        $item['page_names'] = $itemPageNames;
+                        $item['url'] = $itemUrl;
+                        $item['images'] = $itemImages;
+                        $item['stock'] = $itemStock;
+                        $item['gender'] = '';
+                    }
+    
+                    $dataItemCsv[] = $item;
+
                 }
 
-                $itemId = $product->getId();
-                $itemName = $product->getName();
-                $itemBrandId = $product->getManufacturer();
-                $itemBrandName = $product->getAttributeText('manufacturer');
-
-
-                if ($finalPrice < $simplePrice) {
-                    $_savingPercent = 100 - round(($finalPrice / $simplePrice) * 100);
-                }
-
-                $itemDiscount = $_savingPercent;
-                $itemPageIds = implode("|", $product->getCategoryIds());
-                $itemPageNames = implode("|", $productCategories);
-
-                $parentProduct = $objectManager->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')->getParentIdsByChild($itemId);
-                if (isset($parentProduct[0])) {
-                    $_parentProduct = $objectManager->create('Magento\Catalog\Model\Product')->load($parentProduct[0]);
-                    $itemUrl = $_parentProduct->getProductUrl();
-                } else if ($product->isVisibleInCatalog() && $product->isVisibleInSiteVisibility()) {
-                    $itemUrl = $product->getProductUrl();
-                } else {
-                    $itemUrl = null;
-                }
-
-                $itemImages = implode("|", $productImages);
-                $itemStock = $productStock;
-
-                $item = [];
-                $item['item_id'] = $itemId;
-                $item['name'] = $itemName;
-                $item['brand_id'] = $itemBrandId;
-                $item['brand_name'] = $itemBrandName;
-                $item['price'] = round($simplePrice, 2);
-                $item['market_price'] = round($finalPrice, 2);
-                $item['discount'] = $itemDiscount;
-                $item['page_ids'] = $itemPageIds;
-                $item['page_names'] = $itemPageNames;
-                $item['url'] = $itemUrl;
-                $item['images'] = $itemImages;
-                $item['stock'] = $itemStock;
-
-                $dataItemCsv[] = $item;
             }
 
             $this->helper->generateItemCsv($dataItemCsv);
@@ -234,7 +252,9 @@ class Export
 
         // echo 'Inferendo_Visidea::cron - done';
 
-        error_log(date('d/m/Y H:i:s').' Inferendo_Visidea::cron - done');
+        $this->logger->info('Visidea cron ended');
+
+        // error_log(date('d/m/Y H:i:s').' Inferendo_Visidea::cron - done');
 
         return $this;
 

@@ -21,9 +21,6 @@
                </field>
                <field id="public_token" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
                    <label>Public token</label>
-                   <!-- <depends>
-                       <field id="enable">1</field>
-                   </depends> -->
                    <validate>validate-no-empty</validate>
                </field>
                 <field id="private_token" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">

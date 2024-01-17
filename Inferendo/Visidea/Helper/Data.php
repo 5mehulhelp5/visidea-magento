@@ -398,14 +398,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             if (isset($item['item_id'])) {
                 $itemData = [];
                 $itemData[] = (int)$item['item_id'];
-                $itemData[] = $item['name'];
+                $itemData[] = str_replace('"', '\"', $item['name']);
+                $itemData[] = str_replace('"', '\"', $item['description']);
                 $itemData[] = $item['brand_id'];
-                $itemData[] = $item['brand_name'];
+                $itemData[] = str_replace('"', '\"', $item['brand_name']);
                 $itemData[] = $item['price'];
                 $itemData[] = $item['market_price'];
                 $itemData[] = $item['discount'];
                 $itemData[] = $item['page_ids'];
-                $itemData[] = $item['page_names'];
+                $itemData[] = str_replace('"', '\"', $item['page_names']);
                 $itemData[] = $item['url'];
                 $itemData[] = $item['images'];
                 $itemData[] = $item['stock'];
@@ -441,12 +442,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                 $itemData = [];
                 $itemData[] = (int)$item['user_id'];
                 $itemData[] = $item['email'];
-                $itemData[] = $item['name'];
-                $itemData[] = $item['surname'];
-                $itemData[] = $item['address'];
-                $itemData[] = $item['city'];
-                $itemData[] = $item['zip'];
-                $itemData[] = $item['state'];
+                $itemData[] = str_replace('"', '\"', $item['name']);
+                $itemData[] = str_replace('"', '\"', $item['surname']);
+                $itemData[] = str_replace('"', '\"', $item['address']);
+                $itemData[] = str_replace('"', '\"', $item['city']);
+                $itemData[] = str_replace('"', '\"', $item['zip']);
+                $itemData[] = str_replace('"', '\"', $item['state']);
                 $itemData[] = $item['country'];
                 $itemData[] = $item['birthday'];
                 $stream->writeCsv($itemData, ";");
@@ -496,7 +497,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getItemColumnHeader()
     {
-        $headers = ['item_id', 'name', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock'];
+        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock'];
         return $headers;
     }
 
