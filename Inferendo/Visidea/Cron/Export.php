@@ -239,9 +239,8 @@ class Export
                         $item['images'] = $itemImages;
                         $item['stock'] = $itemStock;
                         $item['gender'] = '';
+                        $dataItemCsv[] = $item;
                     }
-    
-                    $dataItemCsv[] = $item;
 
                 }
 
