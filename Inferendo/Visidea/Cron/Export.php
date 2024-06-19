@@ -136,9 +136,20 @@ class Export
 
         $productCollection = $this->helper->getProductCollection();
         if ($productCollection) {
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $storeManager = $objectManager->get('\Magento\Store\Model\StoreManagerInterface');
+            $stores = $storeManager->getStores();
+            $primaryStoreId = $storeManager->getDefaultStoreView()->getId();
+            
+            // Determine non-primary store views
+            $nonPrimaryStores = array();
+            foreach ($stores as $store) {
+                if ($store->getId() != $primaryStoreId)
+                    $nonPrimaryStores[] = $store;
+            }
+
             $dataItemCsv = [];
             foreach ($productCollection as $product) {
-                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
                 $_product = $objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
                 $visibility = $_product->getAttributeText('visibility')->getText();
 
@@ -201,7 +212,9 @@ class Export
                     $itemBrandId = $product->getManufacturer();
                     $itemBrandName = $product->getAttributeText('manufacturer');
                     $itemDescription = $product->getDescription();
-    
+                    $itemBarcode = $_product->getData('barcode'); // Assuming 'barcode' is the attribute code for the barcode
+                    $itemMpn = $_product->getData('mpn'); // Assuming 'mpn' is the attribute code for the MPN
+        
                     if ($finalPrice < $simplePrice) {
                         $_savingPercent = 100 - round(($finalPrice / $simplePrice) * 100);
                     }
@@ -239,6 +252,29 @@ class Export
                         $item['images'] = $itemImages;
                         $item['stock'] = $itemStock;
                         $item['gender'] = '';
+                        $item['barcode'] = $itemBarcode; // Adding barcode to the item array
+                        $item['mpn'] = $itemMpn; // Adding MPN to the item array
+    
+                        // Add name, description, page names, and URL for each non-primary language
+                        foreach ($nonPrimaryStores as $store) {
+                            $storeId = $store->getId();
+                            // Reload the product for the specific store view
+                            $localizedProduct = $objectManager->create('Magento\Catalog\Model\Product')->setStoreId($storeId)->load($product->getId());
+                            $item['name_' . $store->getCode()] = $localizedProduct->getName();
+                            $item['description_' . $store->getCode()] = $localizedProduct->getDescription();
+
+                            // Retrieve categories for this store view
+                            $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds())->setStoreId($storeId);
+                            $productCategories = [];
+                            if (count($_categoryCollection) > 0) {
+                                foreach ($_categoryCollection as $_category) {
+                                    $productCategories[] = $_category->getName();
+                                }
+                            }
+                            $item['page_names_' . $store->getCode()] = implode("|", $productCategories);
+                            $item['url_' . $store->getCode()] = $localizedProduct->getProductUrl();
+                        }
+
                         $dataItemCsv[] = $item;
                     }
 
@@ -246,7 +282,7 @@ class Export
 
             }
 
-            $this->helper->generateItemCsv($dataItemCsv);
+            $this->helper->generateItemCsv($dataItemCsv, $nonPrimaryStores);
         }
 
         // echo 'Inferendo_Visidea::cron - done';

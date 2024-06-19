@@ -378,7 +378,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @return void
      */
-    public function generateItemCsv($data)
+    public function generateItemCsv($data, $nonPrimaryStores)
     {
         $csvData = $data;
         $token_id = $this->getConfig('general', 'private_token');
@@ -391,7 +391,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         foreach ($columns as $column) {
             $header[] = $column;
         }
-
+        foreach ($nonPrimaryStores as $store) {
+            $header[] = 'name_' . $store->getCode();
+            $header[] = 'description_' . $store->getCode();
+            $header[] = 'page_names_' . $store->getCode();
+            $header[] = 'url_' . $store->getCode();
+        }
         $stream->writeCsv($header, ";");
 
         foreach ($csvData as $item) {
@@ -410,6 +415,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                 $itemData[] = $item['url'];
                 $itemData[] = $item['images'];
                 $itemData[] = $item['stock'];
+                $itemData[] = $item['gender'];
+                $itemData[] = $item['barcode'];
+                $itemData[] = $item['mpn'];
+                foreach ($nonPrimaryStores as $store) {
+                    $itemData[] = $item['name_' . $store->getCode()];
+                    $itemData[] = $item['description_' . $store->getCode()];
+                    $itemData[] = $item['page_names_' . $store->getCode()];
+                    $itemData[] = $item['url_' . $store->getCode()];
+                }
                 $stream->writeCsv($itemData, ";");
             }
         }
@@ -462,9 +476,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function createExportFolder()
     {
-        $destPath2 = $this->dir->getPath('media') . '/visidea/csv';
-        if (!is_dir($destPath2)) {
-            $this->file->mkdir($destPath2, 0777, true);
+        $destPath = $this->dir->getPath('media') . '/visidea/csv';
+        if (!is_dir($destPath)) {
+            $this->file->mkdir($destPath, 0777, true);
         }
     }
 
@@ -497,7 +511,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getItemColumnHeader()
     {
-        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock'];
+        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock', 'gender', 'barcode', 'mpn'];
         return $headers;
     }
 
