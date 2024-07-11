@@ -3,13 +3,13 @@ $helper = $this->helper('Inferendo\Visidea\Helper\Data');
 if ($helper->isEnabled()):
     $public_token = $helper->getConfig('general','public_token');
     $website = $helper->getConfig('general','website');
+
     $currentFullAction = $block->getRequest()->getFullActionName();
     if ($block->isLoggedIn()) {
         $user_id = $block->getCustomerId();
     } else {
-        $user_id = 0;
+        $user_id = '';
     }
-
     if ($currentFullAction == 'catalog_product_view' && $currentProduct = $block->getCurrentProduct()) {
         $product_id = $currentProduct->getId();
     } else {
@@ -18,6 +18,9 @@ if ($helper->isEnabled()):
 
     $page = 'other';
     switch ($currentFullAction){
+        case 'cms_index_index':
+            $page = 'home';
+            break;
         case 'catalog_product_view':
             $page = 'product';
             break;
@@ -27,159 +30,30 @@ if ($helper->isEnabled()):
         case 'checkout_onepage_success':
             $page = 'order';
             break;
-        case 'cms_index_index':
-            $page = 'home';
-            break;
     }
 ?>
 
+<?php if ($page == 'home'): ?>
+    <div class="visidea-recommendations" page="home" user_id="<?php echo $user_id; ?>"></div>
+<?php endif; ?>
+<?php if ($page == 'product'): ?>
+    <div class="visidea-recommendations" page="product" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>"></div>
+    <meta class="visidea-interaction" type="item" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>" />
+<?php endif; ?>
+<?php if ($page == 'cart'): ?>
+    <div class="visidea-recommendations" page="cart" user_id="<?php echo $user_id; ?>"></div>
+<?php endif; ?>
+<?php if ($page == 'order'): ?>
+    <div class="visidea-recommendations" page="order" user_id="<?php echo $user_id; ?>"></div>
+<?php endif; ?>
 
-    <div class="block widget block-products-list grid">
-        <div class="block-content" id="visidea-cont">
-
-
-        </div>
-    </div>
-
+    <div class="visidea-search-bar" user_id="<?php echo $user_id; ?>"></div>
 
     <script type="text/javascript">
-
-        require(["Visidea", "VisideaMagento", "jquery", "Slick"], function (Visidea, VisMagento, $, Slick) {
-
-            var whenExists = function(name, callback) {
-                var interval = 10; // ms
-                window.setTimeout(function() {
-                    if (eval(name) != undefined) {
-                        callback();
-                    } else {
-                        window.setTimeout(arguments.callee, interval);
-                    }
-                }, interval);
-            }
-
-            function show_slider(){
-                $('.visidea-products').slick({
-                    slidesToShow: 5,
-                    slidesToScroll: 1,
-                    centerMode: false,
-                    arrows: true,
-                    autoplay: true,
-                    autoplaySpeed: 2000,
-                    responsive: [
-                        {
-                            breakpoint: 1300,
-                            settings: {
-                                slidesToShow: 4,
-                                slidesToScroll: 1,
-                            }
-                        },
-                        {
-                            breakpoint: 1000,
-                                settings: {
-                            slidesToShow: 3,
-                                slidesToScroll: 1
-                        }
-                        },
-                        {
-                            breakpoint: 420,
-                                settings: {
-                            slidesToShow: 2,
-                                slidesToScroll: 1
-                        }
-                        }
-                    ]
-                });
-
-            }
-
-            var gc = 1;
-            var itemsProcessed = 0;
-
-            function show_product(res){
-                if (Array.isArray(res)) {
-                    res.forEach(function(item) {
-                        var producthtml = '' +
-                            '<div>' +
-                            '   <div class="product-item" style="width: 100%; padding:10px;">'+
-                            '       <div class="product-item-info">'+
-                            '           <a href="'+ item.url +'" class="product-item-photo">'+
-                            '               <span class="product-image-container" style="width:240px;">'+
-                            '                   <span class="product-image-wrapper" style="padding-bottom: 100%;">'+
-                            '                       <img class="product-image-photo" src="'+ item.images[0] +'" max-width="240" max-height="300" alt="Radiant Tee">'+
-                            '                   </span>'+
-                            '               </span>'+
-                            '           </a>'+
-                            '           <div class="product-item-details">'+
-                            '               <strong class="product-item-name">'+
-                            '                   <a title="Radiant Tee" href="'+ item.url +'" class="product-item-link">'+
-                            '                       '+ item.name +
-                            '                   </a>'+
-                            '               </strong>'+
-                            '               <div class="price-box price-final_price" data-role="priceBox" data-product-id="'+ item.id +'" data-price-box="product-id-'+ item.id +'"><span class="normal-price">'+
-                            '                   <span class="price-container price-final_price tax weee">'+
-                            '                       <span id="old-price-'+ item.id +'-widget-product-grid" data-price-type="finalPrice" class="price-wrapper"><span class="price">'+ window.visidea.format_currency(item.price) +'</span></span></span>'+
-                            '                   </span>'+
-                            '               </div>'+
-                            '           </div>'+
-                            '       </div>'+
-                            '    </div>'+
-                            '</div>';
-
-                        var id = 'visidea-products'+gc;
-                        document.getElementById(id).innerHTML += producthtml;
-                    });
-                }
-                gc++;
-            }
-
-
-            window.Visidea = Visidea;
-            window.visidea = new Visidea.Api('<?= $website ?>', '<?= $public_token ?>');
-            whenExists("window.visidea.conf.has_visualsearch", function() {
-
-                window.visideaMagento = new VisideaMagento(window.visidea, '<?= $website ?>', '<?= $public_token ?>');
-                var user_id = window.visideaMagento.setUser(<?= $user_id; ?>);
-
-                <?php if($page == 'product'): ?>
-                    window.visidea.item_view("<?= $product_id ?>",user_id);
-                <?php endif; ?>
-
-                <?php if($page != 'other'): ?>
-
-                    var cont = 1;
-                    var n_rec_type = 0;
-
-                    window.visidea.conf.<?= $page; ?>.forEach(function(item) {
-                        if (item.show)
-                            n_rec_type++;
-                    });
-
-                    window.visidea.conf.<?= $page; ?>.forEach(function(item) {
-                        if (item.show) {
-                            var myhtml = '<h2>' + item.title + '</h2><div class="products wrapper grid products-grid products-upsell">' +
-                                '                <div id="visidea-products' + cont + '" class="visidea visidea-products products-rec">' +
-                                '                </div>' +
-                                '            </div>';
-                            document.getElementById("visidea-cont").innerHTML += myhtml;
-
-                            window.visidea.recommend(item.algo, user_id, "<?= $product_id; ?>", [], item.n,
-                                function (res) {
-                                    show_product(res);
-                                    itemsProcessed++;
-                                    console.log('itemsProcessed:'+itemsProcessed)
-                                    console.log('n_rec_type:'+n_rec_type)
-                                    if (itemsProcessed == n_rec_type) {
-                                        show_slider();
-                                    }
-                                }, []);
-                            cont++;
-                        }
-                    });
-
-                <?php endif; ?>
-
-            });
-
+        require(["Visidea"], function (Visidea) {
+            window.onload = function() {
+                visidea('<?php echo $website ?>', '<?php echo $public_token ?>');
+            };
         });
     </script>
 

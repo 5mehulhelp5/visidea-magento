@@ -26,7 +26,13 @@
         <policy id="img-src">
             <values>
               <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
+              <value id="visidea-website" type="host">visidea.ai</value>
               <value id="visidea-data" type="host">data:</value>
+            </values>
+          </policy>
+        <policy id="font-src">
+            <values>
+              <value id="visidea-cdn" type="host">cdn.visidea.ai</value>
             </values>
           </policy>
     </policies>
