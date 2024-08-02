@@ -27,6 +27,8 @@ use Magento\Framework\File\Csv;
 use Magento\Framework\App\PageCache\Version;
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Cache\Frontend\Pool;
+use Magento\Quote\Model\ResourceModel\Quote\CollectionFactory as QuoteCollectionFactory;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 
 /**
  * Data class
@@ -54,13 +56,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $dateTime;
     protected $csvProcessor;
     protected $fileFactory;
-    protected $directory;
     protected $productCollectionFactory;
-    protected $customer;
+    protected $customers;
     protected $customerFactory;
     protected $cacheTypeList;
     protected $cacheFrontendPool;
     private $_httpContext;
+    private $quoteCollectionFactory;
+    private $orderCollectionFactory;
 
     const MODULE_ENABLED = 'inferendo_visidea/general/enable';
 
@@ -79,9 +82,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param \Magento\Quote\Model\Quote                                     $quoteModel               quoteModel
      * @param \Magento\Quote\Model\QuoteManagement                           $quoteManagement          quoteManagement
      * @param \Magento\Framework\Stdlib\DateTime\DateTime                    $dateTime                 dateTime
-     * @param \Magento\Framework\App\Response\Http\FileFactory               $fileFactory              fileFactory
-     * @param \Magento\Framework\Filesystem                                  $filesystem               filesystem
-     * @param Csv                                                            $csvProcessor             csvProcessor
      * @param \Magento\Framework\App\Http\Context                            $httpContext              httpContext
      * @param \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory productCollectionFactory
      * @param \Magento\Customer\Model\CustomerFactory                        $customerFactory          customerFactory
@@ -102,15 +102,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Quote\Model\Quote $quoteModel,
         \Magento\Quote\Model\QuoteManagement $quoteManagement,
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
-        \Magento\Framework\App\Response\Http\FileFactory $fileFactory,
-        \Magento\Framework\Filesystem $filesystem,
-        Csv $csvProcessor,
         \Magento\Framework\App\Http\Context $httpContext,
         \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
         \Magento\Customer\Model\CustomerFactory $customerFactory,
         \Magento\Customer\Model\Customer $customers,
         \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList, 
-        \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool
+        \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool,
+        \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $quoteCollectionFactory,
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory
     
     ) {
         $this->storeManager = $storeManager;
@@ -125,15 +124,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->quoteModel = $quoteModel;
         $this->quoteManagement = $quoteManagement;
         $this->dateTime = $dateTime;
-        $this->csvProcessor = $csvProcessor;
-        $this->fileFactory = $fileFactory;
-        $this->directory = $filesystem->getDirectoryWrite(DirectoryList::PUB);
         $this->_httpContext = $httpContext;
         $this->productCollectionFactory = $productCollectionFactory;
         $this->customerFactory = $customerFactory;
-        $this->customer = $customers;
+        $this->customers = $customers;
         $this->cacheTypeList = $cacheTypeList;
         $this->cacheFrontendPool = $cacheFrontendPool;
+        $this->quoteCollectionFactory = $quoteCollectionFactory;
+        $this->orderCollectionFactory = $orderCollectionFactory;
         parent::__construct($context);
     }
 
@@ -200,7 +198,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
                 'full_page',
                 'translate',
                 'config_webservice'
-                ];
+              ];
     
         foreach ($_types as $type) {
             $this->cacheTypeList->cleanType($type);
@@ -211,26 +209,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
-     * Method getReturnUrl
+     * Method getBaseUrl
      *
      * @param string $path path
      *
      * @return string         return full path
      */
-    public function getReturnUrl($path)
+    public function getBaseUrl($path)
     {
         return $this->storeManager->getStore()->getBaseUrl() . $path;
-    }
-
-    /**
-     * Method getCronUrl
-     *
-     * @return string         return full path
-     */
-    public function getCronUrl()
-    {
-        $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('visidea/csv/export/token_id/' . $token_id);
     }
 
     /**
@@ -261,7 +248,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getInteractionExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/visidea/csv/interactions_' . $token_id . '.csv');
+        return $this->getBaseUrl('pub/media/visidea/csv/interactions_' . $token_id . '.csv');
     }
 
     /**
@@ -272,7 +259,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getItemsExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/visidea/csv/items_' . $token_id . '.csv');
+        return $this->getBaseUrl('pub/media/visidea/csv/items_' . $token_id . '.csv');
     }
 
     /**
@@ -283,41 +270,45 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getCustomerExportUrl()
     {
         $token_id = $this->getConfig('general', 'private_token');
-        return $this->getReturnUrl('pub/media/visidea/csv/users_' . $token_id . '.csv');
+        return $this->getBaseUrl('pub/media/visidea/csv/users_' . $token_id . '.csv');
     }
 
     /**
-     * Method getUrl
-     *
-     * @param string $route  route
-     * @param array  $params params
-     *
-     * @return string               return url
-     */
-    public function getUrl($route, $params = [])
-    {
-        return $this->_getUrl($route, $params);
-    }
-
-    /**
-     * Method getQuoteCollection
-     *
-     * @return array return quote
-     */
-    public function getQuoteCollection()
-    {
-        $collection = $this->quoteFactory->create()->addFieldToSelect('*');
-        $collection->addFieldToFilter('customer_id', ['neq' => 'NULL']);
-
-        return $collection;
-    }
-
-    /**
-     * Method getProductCollection
+     * Method getCartsCollection
      *
      * @return array return collection
      */
-    public function getProductCollection()
+    public function getCartsCollection()
+    {
+        // Fetch the collection of quotes
+        $cartsCollection = $this->quoteCollectionFactory->create();
+        $cartsCollection->addFieldToSelect('*');
+        $cartsCollection->addFieldToFilter('customer_id', ['neq' => 'NULL']);
+
+        return $cartsCollection;
+    }
+
+    /**
+     * Method getOrdersCollection
+     *
+     * @return array return collection
+     */
+    public function getOrdersCollection()
+    {
+        // Fetch the collection of orders
+        $ordersCollection = $this->orderCollectionFactory->create();
+        $ordersCollection->addFieldToSelect('*');
+        $ordersCollection->addFieldToFilter('customer_id', ['neq' => 'NULL']);
+
+        return $ordersCollection;
+    }
+
+    /**
+     * Method getItemsCollection
+     *
+     * @return array return collection
+     */
+    public function getItemsCollection()
     {
         $collection = $this->productCollectionFactory->create();
         $collection->addAttributeToSelect('*');
@@ -326,147 +317,15 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     /**
-     * Method getCustomerCollection
+     * Method getUsersCollection
      *
      * @return array return collection
      */
-    public function getCustomerCollection()
+    public function getUsersCollection()
     {
-        return $this->customer->getCollection()
+        return $this->customers->getCollection()
             ->addAttributeToSelect("*")
             ->load();
-    }
-
-    /**
-     * Method generateInteractionCsv
-     *
-     * @param array $data data
-     *
-     * @return void
-     */
-    public function generateInteractionCsv($data)
-    {
-        $csvData = $data;
-        $token_id = $this->getConfig('general', 'private_token');
-        $fileName = 'interactions_' . $token_id . '.csv';
-        $filepath = 'media/visidea/csv/' . $fileName;
-        $stream = $this->directory->openFile($filepath, 'w+');
-        $stream->lock();
-        $columns = $this->getColumnHeader();
-        foreach ($columns as $column) {
-            $header[] = $column;
-        }
-
-        $stream->writeCsv($header, ";");
-
-        foreach ($csvData as $item) {
-            if (isset($item['item_id'])) {
-                $itemData = [];
-                $itemData[] = (int)$item['user_id'];
-                $itemData[] = $item['item_id'];
-                $itemData[] = $item['action'];
-                $itemData[] = $item['timestamp'];
-                $stream->writeCsv($itemData, ";");
-            }
-        }
-    }
-
-    /**
-     * Method generateItemCsv
-     *
-     * @param array $data data
-     *
-     * @return void
-     */
-    public function generateItemCsv($data, $nonPrimaryStores)
-    {
-        $csvData = $data;
-        $token_id = $this->getConfig('general', 'private_token');
-        $fileName = 'items_' . $token_id . '.csv';
-
-        $filepath = 'media/visidea/csv/' . $fileName;
-        $stream = $this->directory->openFile($filepath, 'w+');
-        $stream->lock();
-        $columns = $this->getItemColumnHeader();
-        foreach ($columns as $column) {
-            $header[] = $column;
-        }
-        foreach ($nonPrimaryStores as $store) {
-            $header[] = 'name_' . $store->getCode();
-            $header[] = 'description_' . $store->getCode();
-            $header[] = 'page_names_' . $store->getCode();
-            $header[] = 'url_' . $store->getCode();
-        }
-        $stream->writeCsv($header, ";");
-
-        foreach ($csvData as $item) {
-            if (isset($item['item_id'])) {
-                $itemData = [];
-                $itemData[] = (int)$item['item_id'];
-                $itemData[] = str_replace('"', '\"', $item['name']);
-                $itemData[] = str_replace('"', '\"', $item['description']);
-                $itemData[] = $item['brand_id'];
-                $itemData[] = str_replace('"', '\"', $item['brand_name']);
-                $itemData[] = $item['price'];
-                $itemData[] = $item['market_price'];
-                $itemData[] = $item['discount'];
-                $itemData[] = $item['page_ids'];
-                $itemData[] = str_replace('"', '\"', $item['page_names']);
-                $itemData[] = $item['url'];
-                $itemData[] = $item['images'];
-                $itemData[] = $item['stock'];
-                $itemData[] = $item['gender'];
-                $itemData[] = $item['barcode'];
-                $itemData[] = $item['mpn'];
-                foreach ($nonPrimaryStores as $store) {
-                    $itemData[] = $item['name_' . $store->getCode()];
-                    $itemData[] = $item['description_' . $store->getCode()];
-                    $itemData[] = $item['page_names_' . $store->getCode()];
-                    $itemData[] = $item['url_' . $store->getCode()];
-                }
-                $stream->writeCsv($itemData, ";");
-            }
-        }
-    }
-
-    /**
-     * Method generateUserCsv
-     *
-     * @param array $data data
-     *
-     * @return void
-     */
-    public function generateUserCsv($data)
-    {
-        $csvData = $data;
-        $token_id = $this->getConfig('general', 'private_token');
-        $fileName = 'users_' . $token_id . '.csv';
-        $filepath = 'media/visidea/csv/' . $fileName;
-        $stream = $this->directory->openFile($filepath, 'w+');
-        $stream->lock();
-        $columns = $this->getUserColumnHeader();
-        foreach ($columns as $column) {
-            $header[] = $column;
-        }
-
-        $stream->writeCsv($header, ";");
-
-        foreach ($csvData as $item) {
-            if (isset($item['user_id'])) {
-                $itemData = [];
-                $itemData[] = (int)$item['user_id'];
-                $itemData[] = $item['email'];
-                $itemData[] = str_replace('"', '\"', $item['name']);
-                $itemData[] = str_replace('"', '\"', $item['surname']);
-                $itemData[] = str_replace('"', '\"', $item['address']);
-                $itemData[] = str_replace('"', '\"', $item['city']);
-                $itemData[] = str_replace('"', '\"', $item['zip']);
-                $itemData[] = str_replace('"', '\"', $item['state']);
-                $itemData[] = $item['country'];
-                $itemData[] = $item['birthday'];
-                $stream->writeCsv($itemData, ";");
-            }
-        }
     }
 
     /**
@@ -478,40 +337,40 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $destPath = $this->dir->getPath('media') . '/visidea/csv';
         if (!is_dir($destPath)) {
-            $this->file->mkdir($destPath, 0777, true);
+            $this->file->mkdir($destPath, 0755, true);
         }
     }
 
     /**
-     * Method getColumnHeader
+     * Method getInteractionsColumnsHeader
      *
      * @return array return headers
      */
-    public function getColumnHeader()
+    public function getInteractionsColumnsHeader()
     {
         $headers = ['user_id', 'item_id', 'action', 'timestamp'];
         return $headers;
     }
 
     /**
-     * Method getUserColumnHeader
+     * Method getUsersColumnsHeader
      *
      * @return array return headers
      */
-    public function getUserColumnHeader()
+    public function getUsersColumnsHeader()
     {
         $headers = ['user_id', 'email', 'name', 'surname', 'address', 'city', 'zip', 'state', 'country', 'birthday'];
         return $headers;
     }
 
     /**
-     * Method getItemColumnHeader
+     * Method getItemsColumnsHeader
      *
      * @return array return headers
      */
-    public function getItemColumnHeader()
+    public function getItemsColumnsHeader()
     {
-        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock', 'gender', 'barcode', 'mpn'];
+        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock', 'gender', 'ean', 'mpn', 'code'];
         return $headers;
     }
 
@@ -525,4 +384,5 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $isLoggedIn = $this->_httpContext->getValue(\Magento\Customer\Model\Context::CONTEXT_AUTH);
         return $isLoggedIn;
     }
+
 }

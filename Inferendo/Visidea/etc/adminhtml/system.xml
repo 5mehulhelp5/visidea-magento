@@ -27,16 +27,13 @@
                    <label>Private token</label>
                    <validate>validate-no-empty</validate>
                </field>
-                <field id="cron_url" translate="label" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\CronUrl</frontend_model>
-                </field>
-                <field id="items_export_csv" translate="label" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="items_export_csv" translate="label" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\ItemsExport</frontend_model>
                 </field>
-                <field id="customer_export_csv" translate="label" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="customer_export_csv" translate="label" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
                     <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\CustomerExport</frontend_model>
                 </field>
-                <field id="export_csv" translate="label" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="export_csv" translate="label" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
                     <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\InteractionExport</frontend_model>
                 </field>
             </group>
