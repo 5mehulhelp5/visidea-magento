@@ -14,6 +14,7 @@
 namespace Inferendo\Visidea\Block;
 
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Locale\ResolverInterface;
 
 /**
  * Info class
@@ -30,6 +31,7 @@ class Info extends \Magento\Framework\View\Element\Template
     protected $currentCustomer;
     protected $registry;
     protected $httpContext;
+    protected $localeResolver;
 
     /**
      * Method __construct
@@ -45,10 +47,12 @@ class Info extends \Magento\Framework\View\Element\Template
         \Magento\Framework\View\Element\Template\Context $context,
         \Magento\Framework\Registry $registry,
         \Magento\Framework\App\Http\Context $httpContext,
+        \Magento\Framework\Locale\ResolverInterface $localeResolver,
         array $data = []
     ) {
-        $this->registry = $registry;
         $this->httpContext = $httpContext;
+        $this->registry = $registry;
+        $this->localeResolver = $localeResolver;
         parent::__construct($context, $data);
     }
 
@@ -82,4 +86,17 @@ class Info extends \Magento\Framework\View\Element\Template
     {
         return $this->httpContext->getValue('customer_id') > 0;
     }
+
+    /**
+     * Get language code
+     *
+     * @return string
+     */
+    public function getLanguage()
+    {
+        $locale = $this->localeResolver->getLocale();
+        $languageCode = substr($locale, 0, 2); // Extract language code (e.g., 'en' from 'en_US')
+        return $languageCode;
+    }
+
 }

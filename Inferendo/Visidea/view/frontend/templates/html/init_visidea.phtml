@@ -31,23 +31,24 @@ if ($helper->isEnabled()):
             $page = 'order';
             break;
     }
+    $language = $block->getLanguage();
 ?>
 
 <?php if ($page == 'home'): ?>
-    <div class="visidea-recommendations" page="home" user_id="<?php echo $user_id; ?>"></div>
+    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="home" user_id="<?php echo $user_id; ?>"></div>
 <?php endif; ?>
 <?php if ($page == 'product'): ?>
-    <div class="visidea-recommendations" page="product" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>"></div>
+    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="product" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>"></div>
     <meta class="visidea-interaction" type="item" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>" />
 <?php endif; ?>
 <?php if ($page == 'cart'): ?>
-    <div class="visidea-recommendations" page="cart" user_id="<?php echo $user_id; ?>"></div>
+    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="cart" user_id="<?php echo $user_id; ?>"></div>
 <?php endif; ?>
 <?php if ($page == 'order'): ?>
-    <div class="visidea-recommendations" page="order" user_id="<?php echo $user_id; ?>"></div>
+    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="order" user_id="<?php echo $user_id; ?>"></div>
 <?php endif; ?>
 
-    <div class="visidea-search-bar" user_id="<?php echo $user_id; ?>"></div>
+    <div class="visidea-search-bar" language="<?php echo $language; ?>" user_id="<?php echo $user_id; ?>"></div>
 
     <script type="text/javascript">
         require(["Visidea"], function (Visidea) {
