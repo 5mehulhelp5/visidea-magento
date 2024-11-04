@@ -29,6 +29,8 @@ use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Cache\Frontend\Pool;
 use Magento\Quote\Model\ResourceModel\Quote\CollectionFactory as QuoteCollectionFactory;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Checkout\Model\Cart;
+
 
 /**
  * Data class
@@ -64,6 +66,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     private $_httpContext;
     private $quoteCollectionFactory;
     private $orderCollectionFactory;
+    protected $cart;
 
     const MODULE_ENABLED = 'inferendo_visidea/general/enable';
 
@@ -109,7 +112,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList, 
         \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool,
         \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $quoteCollectionFactory,
-        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory
+        \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory,
+        Cart $cart
     
     ) {
         $this->storeManager = $storeManager;
@@ -132,6 +136,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->cacheFrontendPool = $cacheFrontendPool;
         $this->quoteCollectionFactory = $quoteCollectionFactory;
         $this->orderCollectionFactory = $orderCollectionFactory;
+        $this->cart = $cart;
         parent::__construct($context);
     }
 
@@ -383,6 +388,16 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $isLoggedIn = $this->_httpContext->getValue(\Magento\Customer\Model\Context::CONTEXT_AUTH);
         return $isLoggedIn;
+    }
+
+    public function getCartProductIds()
+    {
+        $productIds = [];
+        $quote = $this->cart->getQuote();
+        foreach ($quote->getAllVisibleItems() as $item) {
+            $productIds[] = $item->getProductId();
+        }
+        return implode(',', $productIds);
     }
 
 }

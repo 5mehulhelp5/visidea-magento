@@ -32,6 +32,13 @@ if ($helper->isEnabled()):
             break;
     }
     $language = $block->getLanguage();
+
+    // Get the product IDs in the cart if on the cart page
+    $cartProductIdsString = '';
+    if ($page == 'cart') {
+        $cartProductIdsString = $helper->getCartProductIds();
+    }
+
 ?>
 
 <?php if ($page == 'home'): ?>
@@ -42,7 +49,7 @@ if ($helper->isEnabled()):
     <meta class="visidea-interaction" type="item" user_id="<?php echo $user_id; ?>" item_id="<?php echo $product_id; ?>" />
 <?php endif; ?>
 <?php if ($page == 'cart'): ?>
-    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="cart" user_id="<?php echo $user_id; ?>"></div>
+    <div class="visidea-recommendations" language="<?php echo $language; ?>" page="cart" user_id="<?php echo $user_id; ?>" item_id="<?php echo $cartProductIdsString; ?>"></div>
 <?php endif; ?>
 <?php if ($page == 'order'): ?>
     <div class="visidea-recommendations" language="<?php echo $language; ?>" page="order" user_id="<?php echo $user_id; ?>"></div>

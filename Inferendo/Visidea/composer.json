@@ -2,7 +2,7 @@
     "name": "inferendo/module-visidea",
     "description": "Visidea module for Magento",
     "type": "magento2-module",
-    "version": "2.0.2",
+    "version": "2.1.0",
     "license": [
         "Commercial"
     ],
