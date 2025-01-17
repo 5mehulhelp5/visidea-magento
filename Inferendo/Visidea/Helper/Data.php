@@ -353,7 +353,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getInteractionsColumnsHeader()
     {
-        $headers = ['user_id', 'item_id', 'action', 'timestamp'];
+        $headers = ['user_id', 'item_id', 'action', 'price', 'quantity', 'timestamp'];
         return $headers;
     }
 

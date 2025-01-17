@@ -303,8 +303,8 @@ class Export
         $cartsCollection = $this->helper->getCartsCollection();
         $ordersCollection = $this->helper->getOrdersCollection();
 
-        $this->logger->info('Visidea - Processing carts: '.count($cartsCollection));
-        $this->logger->info('Visidea - Processing orders: '.count($ordersCollection));
+        $this->logger->info('Visidea - Processing carts: ' . count($cartsCollection));
+        $this->logger->info('Visidea - Processing orders: ' . count($ordersCollection));
         if (count($cartsCollection) > 0 || count($ordersCollection) > 0) {
             $fileName = 'interactions_' . $token_id . '.csv';
             $tempFileName = 'interactions_' . $token_id . '.temp';
@@ -316,12 +316,11 @@ class Export
             try {
                 $stream2 = $this->directory->openFile($tempFilePath, 'w+');
                 $stream2->lock();
-                
-                $columns = $this->helper->getInteractionsColumnsHeader();                
+
+                $columns = $this->helper->getInteractionsColumnsHeader();
                 $stream2->writeCsv($columns, ";");
-                
+
                 foreach ($cartsCollection as $interaction) {
-                    // Debugging the interaction
                     $interactionItems = $interaction->getAllVisibleItems();
                     $this->logger->info('Visidea - Processing interaction', [
                         'interaction_id' => $interaction->getId(),
@@ -330,7 +329,6 @@ class Export
 
                     if (count($interactionItems) > 0) {
                         foreach ($interactionItems as $interactionItem) {
-                            // Log each item being processed
                             $this->logger->debug('Visidea - Processing cart item', [
                                 'product_id' => $interactionItem->getProductId()
                             ]);
@@ -340,6 +338,8 @@ class Export
                                     (int)$interaction->getCustomerId(),
                                     $interactionItem->getProductId(),
                                     'cart',
+                                    number_format((float)$interactionItem->getPrice(), 2),
+                                    (int)$interactionItem->getQty(),
                                     date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
                                 ];
 
@@ -348,8 +348,8 @@ class Export
                         }
                     }
                 }
+
                 foreach ($ordersCollection as $interaction) {
-                    // Debugging the interaction
                     $interactionItems = $interaction->getAllVisibleItems();
                     $this->logger->info('Visidea - Processing interaction', [
                         'interaction_id' => $interaction->getId(),
@@ -358,7 +358,6 @@ class Export
 
                     if (count($interactionItems) > 0) {
                         foreach ($interactionItems as $interactionItem) {
-                            // Log each item being processed
                             $this->logger->debug('Visidea - Processing order item', [
                                 'product_id' => $interactionItem->getProductId()
                             ]);
@@ -368,6 +367,8 @@ class Export
                                     (int)$interaction->getCustomerId(),
                                     $interactionItem->getProductId(),
                                     'purchase',
+                                    number_format((float)$interactionItem->getPrice(), 2),
+                                    (int)$interactionItem->getQty(),
                                     date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
                                 ];
 
@@ -377,30 +378,25 @@ class Export
                     }
                 }
 
-                // Close and unlock the file
                 $stream2->unlock();
                 $stream2->close();
 
-                // Rename the temporary file to the final file name
                 if (!rename($tempFilePath, $filePath)) {
                     $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
                     throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
                 }
 
                 file_put_contents($hashFilePath, hash_file('md5', $filePath));
-
                 $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
             } catch (\Exception $e) {
                 $this->logger->error('Visidea - Error exporting interactions: ' . $e->getMessage());
-                
-                // Attempt to clean up the temporary file if an error occurred
                 if (file_exists($tempFilePath)) {
                     unlink($tempFilePath);
                 }
             }
         } else {
             $this->logger->info('Visidea - No interactions found to export');
-        }
+        }        
         
 
         $customerCollection = $this->helper->getUsersCollection();
