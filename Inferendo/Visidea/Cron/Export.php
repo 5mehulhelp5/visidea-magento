@@ -368,7 +368,7 @@ class Export
                                     $interactionItem->getProductId(),
                                     'purchase',
                                     number_format((float)$interactionItem->getPrice(), 2),
-                                    (int)$interactionItem->getQty(),
+                                    (int)$interactionItem->getQtyOrdered(),
                                     date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
                                 ];
 
