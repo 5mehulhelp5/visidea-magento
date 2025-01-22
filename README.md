@@ -12,19 +12,19 @@ php bin/magento cache:flush
 
 To publish the plugin on the Magento module store follow this procedure:
 
-1. zip the "Visidea" folder content and give "inferendo_visidea-2.3.0.zip" name
+1. zip the "Visidea" folder content and give "inferendo_visidea-2.5.0.zip" name
 
     ```sh
     cd Inferendo/Visidea
-    zip -r ../../inferendo_visidea-2.3.0.zip .
+    zip -r ../../inferendo_visidea-2.5.0.zip .
     cd ../..
     ```
 
 2. remove mac file from zip:
 
     ```sh
-    zip -d inferendo_visidea-2.3.0.zip "__MACOSX*"
-    zip -d inferendo_visidea-2.3.0.zip "*.DS_Store"
+    zip -d inferendo_visidea-2.5.0.zip "__MACOSX*"
+    zip -d inferendo_visidea-2.5.0.zip "*.DS_Store"
     ```
 
 3. upload the zip file to Magento module backend: https://developer.magento.com/

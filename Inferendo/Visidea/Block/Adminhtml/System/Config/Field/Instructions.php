@@ -44,7 +44,7 @@ class Instructions extends \Magento\Config\Block\System\Config\Form\Field
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
         \Magento\Framework\View\Asset\Repository $assetRepo,
-        Data $helper,
+        \Inferendo\Visidea\Helper\Data $helper,
         array $data = []
     ) {
         $this->helper = $helper;
@@ -102,9 +102,8 @@ class Instructions extends \Magento\Config\Block\System\Config\Form\Field
     {
         $reload = false;
 
-        $fullwebsite = parse_url($this->helper->getReturnUrl('/'));
+        $fullwebsite = parse_url($this->helper->getBaseUrl('/'));
         $website = $fullwebsite['host'];
-
         $private_token = $this->helper->getPrivateToken();
         $public_token = $this->helper->getPublicToken();
 
