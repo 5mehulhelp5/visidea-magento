@@ -284,7 +284,7 @@ class Export
                     throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
                 }
 
-                file_put_contents($hashFilePath, hash_file('md5', $filePath));
+                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
 
                 $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
             } catch (\Exception $e) {
@@ -386,7 +386,7 @@ class Export
                     throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
                 }
 
-                file_put_contents($hashFilePath, hash_file('md5', $filePath));
+                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
                 $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
             } catch (\Exception $e) {
                 $this->logger->error('Visidea - Error exporting interactions: ' . $e->getMessage());
@@ -471,7 +471,7 @@ class Export
                     throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
                 }
 
-                file_put_contents($hashFilePath, hash_file('md5', $filePath));
+                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
 
                 $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
             } catch (\Exception $e) {
