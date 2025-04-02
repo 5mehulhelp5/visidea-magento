@@ -364,7 +364,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getUsersColumnsHeader()
     {
-        $headers = ['user_id', 'email', 'name', 'surname', 'address', 'city', 'zip', 'state', 'country', 'birthday'];
+        $headers = ['user_id', 'email', 'name', 'surname', 'address', 'city', 'zip', 'state', 'country', 'birthday', 'createdDate'];
         return $headers;
     }
 

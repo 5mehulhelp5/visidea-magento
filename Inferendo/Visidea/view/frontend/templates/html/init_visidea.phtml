@@ -59,9 +59,9 @@ if ($helper->isEnabled()):
 
     <script type="text/javascript">
         require(["Visidea"], function (Visidea) {
-            window.onload = function() {
+            document.addEventListener('DOMContentLoaded', function() {
                 visidea('<?php echo $website ?>', '<?php echo $public_token ?>');
-            };
+            });
         });
     </script>
 

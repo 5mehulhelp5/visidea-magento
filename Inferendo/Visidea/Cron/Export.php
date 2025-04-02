@@ -428,7 +428,8 @@ class Export
                     $userZip = '';
                     $userState = '';
                     $userCountry = '';
-                    $userBirthday = $customer->getDob();
+                    $userBirthday = date('Y-m-d H:i:s', strtotime($customer->getDob()));
+                    $userRegistrationDate = date('Y-m-d H:i:s', strtotime($customer->getCreatedAt()));
 
                     if (count($customer->getAddresses()) > 0) {
                         $i = 0;
@@ -456,6 +457,7 @@ class Export
                         $userData[] = str_replace('"', '\"', $userState);
                         $userData[] = strtolower($userCountry);
                         $userData[] = $userBirthday;
+                        $userData[] = $userRegistrationDate;
                         $stream3->writeCsv($userData, ";");
                     }
 
