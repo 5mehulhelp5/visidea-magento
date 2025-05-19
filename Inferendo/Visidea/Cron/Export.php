@@ -17,6 +17,7 @@ use Inferendo\Visidea\Helper\Data;
 use Psr\Log\LoggerInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Io\File;
+use stdClass;
 
 /**
  * Export class
@@ -59,364 +60,519 @@ class Export
         $this->logger = $logger;
     }
 
-    /**
-     * Method execute
-     *
-     * @return Export return a reference to object
-     */
-    public function execute()
+    public function exportItemsCron()
     {
+        $cronhour = (int)$this->helper->getConfig('general', 'cronhour');
+        $lastRun = $this->helper->getConfig('general', 'cron_items_last_run');
+        $lastRunTs = $lastRun ? strtotime($lastRun) : 0;
+        $now = time();
 
-        $this->logger->info('Visidea - cron started');
+        $this->logger->info('Visidea - items export cron debug: cronhour=' . $cronhour . ', lastRun=' . $lastRun . ', now=' . date('Y-m-d H:i', $now));
 
-        $this->helper->createExportFolder();
-        $pubDirectory = $this->directoryList->getPath(DirectoryList::PUB);
-        $csvDirectory = $pubDirectory . '/media/visidea/csv/';
+        if ($lastRunTs === 0 || $this->shouldRunCronByMinutes($lastRunTs, $now, $cronhour)) {
+            $this->logger->info('Visidea - items export cron started');
+            $this->helper->createExportFolder();
+            $pubDirectory = $this->directoryList->getPath(DirectoryList::PUB);
+            $csvDirectory = $pubDirectory . '/media/visidea/csv/';
+            $token_id = $this->helper->getConfig('general', 'private_token');
+            $this->exportItems($csvDirectory, $token_id);
+            $this->logger->info('Visidea - items export cron ended');
+            // Save current datetime as last run
+            $this->helper->setConfig('general', 'cron_items_last_run', date('Y-m-d H:i', $now));
+        } else {
+            $this->logger->info('Visidea - items export cron skipped (not enough time passed)');
+        }
+    }
 
-        $token_id = $this->helper->getConfig('general', 'private_token');
+    private function shouldRunCronByMinutes($lastRunTs, $now, $cronhour)
+    {
+        $diffMinutes = ($now - $lastRunTs) / 60;
+        $this->logger->info('Visidea - shouldRunCronByMinutes debug: lastRunTs=' . $lastRunTs . ', now=' . $now . ', diffMinutes=' . $diffMinutes . ', cronhour=' . $cronhour);
+        return $diffMinutes >= ($cronhour * 60);
+    }
 
-        $productsCollection = $this->helper->getItemsCollection();
-        if ($productsCollection) {
-            $fileName = 'items_' . $token_id . '.csv';
-            $tempFileName = 'items_' . $token_id . '.temp';
-            $hashFileName = 'items_' . $token_id . '.hash';
-            $filePath = $csvDirectory . $fileName;
-            $tempFilePath = $csvDirectory . $tempFileName;
-            $hashFilePath = $csvDirectory . $hashFileName;
+    public function exportInteractionsCron()
+    {
+        $cronhour = (int)$this->helper->getConfig('general', 'cronhour');
+        $lastRun = $this->helper->getConfig('general', 'cron_interactions_last_run');
+        $lastRunTs = $lastRun ? strtotime($lastRun) : 0;
+        $now = time();
 
-            $this->logger->info('Visidea - File path: ' . $filePath);
-            $this->logger->info('Visidea - Temp file path: ' . $tempFilePath);
+        $this->logger->info('Visidea - interactions export cron debug: cronhour=' . $cronhour . ', lastRun=' . $lastRun . ', now=' . date('Y-m-d H:i', $now));
 
-            try {
+        if ($lastRunTs === 0 || $this->shouldRunCronByMinutes($lastRunTs, $now, $cronhour)) {
+            $this->logger->info('Visidea - interactions export cron started');
+            $this->helper->createExportFolder();
+            $pubDirectory = $this->directoryList->getPath(DirectoryList::PUB);
+            $csvDirectory = $pubDirectory . '/media/visidea/csv/';
+            $token_id = $this->helper->getConfig('general', 'private_token');
+            $this->exportInteractions($csvDirectory, $token_id);
+            $this->logger->info('Visidea - interactions export cron ended');
+            // Save current datetime as last run
+            $this->helper->setConfig('general', 'cron_interactions_last_run', date('Y-m-d H:i', $now));
+        } else {
+            $this->logger->info('Visidea - interactions export cron skipped (not enough time passed)');
+        }
+    }
 
-                $stream1 = $this->directory->openFile($tempFilePath, 'w+');
-                $stream1->lock();
+    public function exportUsersCron()
+    {
+        $cronhour = (int)$this->helper->getConfig('general', 'cronhour');
+        $lastRun = $this->helper->getConfig('general', 'cron_users_last_run');
+        $lastRunTs = $lastRun ? strtotime($lastRun) : 0;
+        $now = time();
 
-                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-                $storeManager = $objectManager->get('\Magento\Store\Model\StoreManagerInterface');
-                $stores = $storeManager->getStores();
-                $primaryStoreId = $storeManager->getDefaultStoreView()->getId();
+        $this->logger->info('Visidea - users export cron debug: cronhour=' . $cronhour . ', lastRun=' . $lastRun . ', now=' . date('Y-m-d H:i', $now));
 
-                // Determine non-primary store views
-                $nonPrimaryStores = array();
-                foreach ($stores as $store) {
-                    if ($store->getId() != $primaryStoreId)
-                        $nonPrimaryStores[] = $store;
-                }
+        if ($lastRunTs === 0 || $this->shouldRunCronByMinutes($lastRunTs, $now, $cronhour)) {
+            $this->logger->info('Visidea - users export cron started');
+            $this->helper->createExportFolder();
+            $pubDirectory = $this->directoryList->getPath(DirectoryList::PUB);
+            $csvDirectory = $pubDirectory . '/media/visidea/csv/';
+            $token_id = $this->helper->getConfig('general', 'private_token');
+            $this->exportUsers($csvDirectory, $token_id);
+            $this->logger->info('Visidea - users export cron ended');
+            // Save current datetime as last run
+            $this->helper->setConfig('general', 'cron_users_last_run', date('Y-m-d H:i', $now));
+        } else {
+            $this->logger->info('Visidea - users export cron skipped (not enough time passed)');
+        }
+    }
 
-                $columns = $this->helper->getItemsColumnsHeader();
-                $headers = [];
-                foreach ($columns as $column) {
-                    $headers[] = $column;
-                }
-                foreach ($nonPrimaryStores as $store) {
-                    $headers[] = 'name_' . $store->getCode();
-                    $headers[] = 'description_' . $store->getCode();
-                    $headers[] = 'page_names_' . $store->getCode();
-                    $headers[] = 'url_' . $store->getCode();
-                }
-                $stream1->writeCsv($headers, ";");
+    private function exportItems($csvDirectory, $token_id)
+    {
+        $pageSize = 500;
+        $currentPage = 1;
 
-                foreach ($productsCollection as $product) {
-                    $_product = $objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
-                    $visibility = $_product->getAttributeText('visibility')->getText();
+        $fileName = 'items_' . $token_id . '.csv';
+        $tempFileName = 'items_' . $token_id . '.temp';
+        $hashFileName = 'items_' . $token_id . '.hash';
+        $filePath = $csvDirectory . $fileName;
+        $tempFilePath = $csvDirectory . $tempFileName;
+        $hashFilePath = $csvDirectory . $hashFileName;
 
-                    if ($visibility !== 'Not Visible Individually') {
+        $this->logger->info('Visidea - File path: ' . $filePath);
+        $this->logger->info('Visidea - Temp file path: ' . $tempFilePath);
 
-                        $stockState = $objectManager->get('\Magento\CatalogInventory\Api\StockStateInterface');
-                        $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
-        
-                        $images = $_product->getMediaGalleryImages();
-                        $productImages = [];
-                        foreach ($images as $child) {
-                            $productImages[] = $child->getUrl();
-                        }
-                        $productStock = $stockState->getStockQty($product->getId(), $product->getStore()->getWebsiteId());
-        
-                        $simplePrice = 0;
-                        $finalPrice = 0;
-                        $_savingPercent = 0;
-        
-                        if ($_product->getTypeId() == "configurable") {
-                            $_children = $_product->getTypeInstance()->getUsedProducts($_product);
-                            $simplePrice = $_children[0]->getPrice();
-                            $finalPrice = $_children[0]->getFinalPrice();
-                            foreach ($_children as $child) {
-                                $productStock += $stockState->getStockQty($child->getId(), $product->getStore()->getWebsiteId());
-                            }
-                        } elseif ($_product->getTypeId() == "grouped") {
-                            $lowest_stock = -1;
-                            $simulationPrice = 0;
-                            $simulationFinalPrice = 0;
-                            $associatedProducts = $_product->getTypeInstance(true)->getAssociatedProducts($_product);
-                            foreach ($associatedProducts as $childProduct) {
-                                $simulationPrice += $childProduct->getPrice();
-                                $simulationFinalPrice += $childProduct->getFinalPrice();
-                                $child_stock = $stockState->getStockQty($childProduct->getId(), $product->getStore()->getWebsiteId());
-                                if ($child_stock < $lowest_stock || $lowest_stock == -1)
-                                    $lowest_stock = $child_stock;
-                            }
-                            $simplePrice = $simulationPrice;
-                            $finalPrice = $simulationFinalPrice;
-                            $productStock = $lowest_stock;
-                        } elseif ($_product->getTypeId() == "bundle") {
-                            $simplePrice = $_product->getPriceInfo()->getPrice('regular_price')->getAmount()->getValue();
-                            $finalPrice = $_product->getPriceInfo()->getPrice('final_price')->getValue();
-                        } else {
-                            $simplePrice = $_product->getPrice();
-                            $finalPrice = $_product->getFinalPrice();
-                        }
-        
-                        $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds());
-                        $productCategories = [];
-                        if (count($_categoryCollection) > 0) {
-                            foreach ($_categoryCollection as $_category) {
-                                $productCategories[] = $_category->getName();
-                            }
-                        }
-        
-                        $itemId = $product->getId();
-                        $itemName = $product->getName();
-                        $itemBrandId = $product->getManufacturer();
-                        $itemBrandName = $product->getAttributeText('manufacturer');
-                        $itemDescription = $product->getDescription();
-                        $itemBarcode = $_product->getData('barcode'); // Assuming 'barcode' is the attribute code for the barcode
-                        $itemMpn = $_product->getData('mpn'); // Assuming 'mpn' is the attribute code for the MPN
-                        $itemSku = $product->getSku(); // Get the SKU
+        try {
+            $stream1 = $this->directory->openFile($tempFilePath, 'w+');
+            $stream1->lock();
 
-                        if ($finalPrice < $simplePrice) {
-                            $_savingPercent = 100 - round(($finalPrice / $simplePrice) * 100);
-                        }
-        
-                        $itemDiscount = $_savingPercent;
-                        $itemPageIds = implode("|", $product->getCategoryIds());
-                        $itemPageNames = implode("|", $productCategories);
-        
-                        $parentProduct = $objectManager->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')->getParentIdsByChild($itemId);
-                        if (isset($parentProduct[0])) {
-                            $_parentProduct = $objectManager->create('Magento\Catalog\Model\Product')->load($parentProduct[0]);
-                            $itemUrl = $_parentProduct->getProductUrl();
-                        } else if ($product->isVisibleInCatalog() && $product->isVisibleInSiteVisibility()) {
-                            $itemUrl = $product->getProductUrl();
-                        } else {
-                            $itemUrl = null;
-                        }
-        
-                        $itemImages = implode("|", $productImages);
-                        $itemStock = $productStock;
-        
-                        if ($itemUrl != '') {
-                            // Add name, description, page names, and URL for each non-primary language
-                            foreach ($nonPrimaryStores as $store) {
-                                $storeId = $store->getId();
-                                // Reload the product for the specific store view
-                                $localizedProduct = $objectManager->create('Magento\Catalog\Model\Product')->setStoreId($storeId)->load($product->getId());
-                                $item['name_' . $store->getCode()] = $localizedProduct->getName();
-                                $item['description_' . $store->getCode()] = $localizedProduct->getDescription();
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $storeManager = $objectManager->get('\Magento\Store\Model\StoreManagerInterface');
+            $stores = $storeManager->getStores();
+            $primaryStoreId = $storeManager->getDefaultStoreView()->getId();
 
-                                // Retrieve categories for this store view
-                                $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds())->setStoreId($storeId);
-                                $productCategories = [];
-                                if (count($_categoryCollection) > 0) {
-                                    foreach ($_categoryCollection as $_category) {
-                                        $productCategories[] = $_category->getName();
-                                    }
-                                }
-                                $item['page_names_' . $store->getCode()] = implode("|", $productCategories);
-                                $item['url_' . $store->getCode()] = $localizedProduct->getProductUrl();
-                            }
-
-                            if (!empty($itemId)) {
-                                $itemData = [];
-                                $itemData[] = (int)$itemId;
-                                $itemData[] = str_replace('"', '\"', $itemName);
-                                $itemData[] = str_replace('"', '\"', $itemDescription);
-                                $itemData[] = $itemBrandId;
-                                $itemData[] = str_replace('"', '\"', $itemBrandName);
-                                $itemData[] = round($simplePrice, 2);
-                                $itemData[] = round($finalPrice, 2);
-                                $itemData[] = $itemDiscount;
-                                $itemData[] = $itemPageIds;
-                                $itemData[] = str_replace('"', '\"', $itemPageNames);
-                                $itemData[] = $itemUrl;
-                                $itemData[] = $itemImages;
-                                $itemData[] = $itemStock;
-                                $itemData[] = '';
-                                $itemData[] = $itemBarcode;
-                                $itemData[] = $itemMpn;
-                                $itemData[] = $itemSku;
-                                foreach ($nonPrimaryStores as $store) {
-                                    $storeId = $store->getId();
-                                    // Reload the product for the specific store view
-                                    $localizedProduct = $objectManager->create('Magento\Catalog\Model\Product')->setStoreId($storeId)->load($product->getId());
-                                    $itemData[] = $localizedProduct->getName();
-                                    $itemData[] = $localizedProduct->getDescription();
-        
-                                    // Retrieve categories for this store view
-                                    $_categoryCollection = $categoryCollection->addAttributeToSelect('*')->addAttributeToFilter('entity_id', $product->getCategoryIds())->setStoreId($storeId);
-                                    $productCategories = [];
-                                    if (count($_categoryCollection) > 0) {
-                                        foreach ($_categoryCollection as $_category) {
-                                            $productCategories[] = $_category->getName();
-                                        }
-                                    }
-                                    $itemData[] = implode("|", $productCategories);
-                                    $itemData[] = $localizedProduct->getProductUrl();
-                                }
-        
-                                // $this->logger->info(json_encode($itemData));
-                                $stream1->writeCsv($itemData, ";");
-                            }
-
-                        }
-
-                    }
-
-                }
-
-                // Close and unlock the file
-                $stream1->unlock();
-                $stream1->close();
-
-                // Rename the temporary file to the final file name
-                if (!rename($tempFilePath, $filePath)) {
-                    $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                    throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                }
-
-                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
-
-                $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
-            } catch (\Exception $e) {
-                $this->logger->error('Visidea - Error exporting items: ' . $e->getMessage());
-
-                // Attempt to clean up the temporary file if an error occurred
-                if (file_exists($tempFilePath)) {
-                    unlink($tempFilePath);
+            // Prepare columns for default and additional store views
+            $columns = $this->helper->getItemsColumnsHeader();
+            $headers = [];
+            foreach ($columns as $column) {
+                $headers[] = $column;
+            }
+            $nonPrimaryStores = [];
+            $hasTraslation = false;
+            foreach ($stores as $store) {
+                if ($store->getId() != $primaryStoreId) {
+                    $nonPrimaryStores[] = $store;
+                    if (!$hasTraslation)
+                        $headers[] = 'translations';
+                    $hasTraslation = true;
+                    // $headers[] = 'name_' . $store->getCode();
+                    // $headers[] = 'description_' . $store->getCode();
+                    // $headers[] = 'page_names_' . $store->getCode();
+                    // $headers[] = 'url_' . $store->getCode();
                 }
             }
+            $stream1->writeCsv($headers, ";");
 
-        } else {
-            $this->logger->info('Visidea - No items found to export');
+            $productCollectionFactory = $objectManager->get('\Magento\Catalog\Model\ResourceModel\Product\CollectionFactory');
+            do {
+                $this->logger->info('Visidea - Processing page: ' . $currentPage);
+                $productsCollection = $productCollectionFactory->create();
+                $productsCollection->addAttributeToSelect([
+                    'name', 'description', 'manufacturer', 'price', 'final_price', 'sku', 'barcode', 'mpn', 'visibility', 'media_gallery'
+                ]);
+                $productsCollection->setPageSize($pageSize);
+                $productsCollection->setCurPage($currentPage);
+
+                $itemsOnPage = count($productsCollection);
+
+                if ($itemsOnPage === 0) {
+                    break;
+                }
+
+                foreach ($productsCollection as $product) {
+                    // Only export simple, virtual, downloadable, and configurable products
+                    if (!in_array($product->getTypeId(), ['simple', 'virtual', 'downloadable', 'configurable'])) {
+                        continue;
+                    }
+
+                    // If the simple product is a child of a configurable, skip it (to avoid duplicate variants)
+                    if ($product->getTypeId() === 'simple') {
+                        $parentIds = $objectManager
+                            ->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')
+                            ->getParentIdsByChild($product->getId());
+                        if (!empty($parentIds)) {
+                            continue;
+                        }
+                    }
+
+                    $visibility = $product->getAttributeText('visibility');
+                    if ($visibility === 'Not Visible Individually') {
+                        continue;
+                    }
+
+                    $itemId = $product->getId();
+                    $itemName = $product->getName();
+                    $itemBrandId = $product->getManufacturer();
+                    $itemBrandName = $product->getAttributeText('manufacturer');
+                    $itemDescription = $product->getDescription();
+                    $itemSku = $product->getSku();
+                    $itemBarcode = $product->getData('barcode');
+                    $itemMpn = $product->getData('mpn');
+
+                    if ($product->getTypeId() === 'configurable') {
+                        $childProducts = $product->getTypeInstance()->getUsedProducts($product);
+                        $minPriceSimple = null;
+                        $minPriceFinal = null;
+                        foreach ($childProducts as $child) {
+                            $childPriceSimple = $child->getPrice();
+                            $childPriceFinal = $child->getFinalPrice();
+                            if ($minPriceSimple === null || $childPriceSimple < $minPriceSimple) {
+                                $minPriceSimple = $childPriceSimple;
+                            }
+                            if ($minPriceFinal === null || $childPriceFinal < $minPriceFinal) {
+                                $minPriceFinal = $childPriceFinal;
+                            }
+                        }
+                        $simplePrice = $minPriceSimple !== null ? $minPriceSimple : $product->getPrice();
+                        $finalPrice = $minPriceFinal !== null ? $minPriceFinal : $product->getFinalPrice();
+                    } else {
+                        $simplePrice = $product->getPrice();
+                        $finalPrice = $product->getFinalPrice();
+                    }
+
+                    $itemDiscount = ($finalPrice < $simplePrice && $simplePrice > 0)
+                        ? 100 - round(($finalPrice / $simplePrice) * 100)
+                        : 0;
+
+                    // Category IDs and names
+                    $categoryIds = $product->getCategoryIds();
+                    $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                    $categoryCollection->addAttributeToSelect('name')
+                        ->addAttributeToFilter('entity_id', $categoryIds)
+                        ->setStoreId($primaryStoreId);
+                    $categoryNames = [];
+                    foreach ($categoryCollection as $_category) {
+                        $categoryNames[] = $_category->getName();
+                    }
+                    $itemPageIds = implode("|", $categoryIds);
+                    $itemPageNames = str_replace('"', '\"', implode("|", $categoryNames));
+
+                    // Product URL
+                    $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
+                    $defaultStoreId = $storeManager->getDefaultStoreView()->getId();
+
+                    $product = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                        ->setStoreId($defaultStoreId)
+                        ->load($product->getId());
+
+                    $itemUrl = $product->getProductUrl();
+
+                    // Images
+                    $mediaGallery = $product->getMediaGalleryImages();
+                    $images = [];
+                    if (!$mediaGallery || count($mediaGallery) === 0) {
+                        // Fallback: reload product for images
+                        $productWithImages = $objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
+                        $mediaGallery = $productWithImages->getMediaGalleryImages();
+                    }
+                    if ($mediaGallery) {
+                        foreach ($mediaGallery as $img) {
+                            $images[] = $img->getUrl();
+                        }
+                    }
+                    $itemImages = implode("|", $images);
+
+                    // Stock
+                    $stockQty = 0;
+                    try {
+                        $stockRegistry = $objectManager->get('\Magento\CatalogInventory\Api\StockRegistryInterface');
+                        if ($product->getTypeId() === 'configurable') {
+                            // Sum stock of all variants
+                            $childProducts = $product->getTypeInstance()->getUsedProducts($product);
+                            foreach ($childProducts as $child) {
+                                $childStockItem = $stockRegistry->getStockItem($child->getId());
+                                $stockQty += $childStockItem ? (int)$childStockItem->getQty() : 0;
+                            }
+                        } else {
+                            // Simple product stock
+                            $stockItem = $stockRegistry->getStockItem($product->getId());
+                            $stockQty = $stockItem ? (int)$stockItem->getQty() : 0;
+                        }
+                    } catch (\Exception $e) {
+                        $stockQty = 0;
+                    }
+
+                    // Gender (if attribute exists)
+                    $itemGender = $product->getResource()->getAttribute('gender')
+                        ? $product->getAttributeText('gender')
+                        : '';
+                    if (is_array($itemGender)) {
+                        $itemGender = implode('|', $itemGender);
+                    }
+                    $itemGender = str_replace('"', '\"', $itemGender);
+
+                    $itemData = [
+                        (int)$itemId,
+                        str_replace('"', '\"', $itemName),
+                        str_replace('"', '\"', $itemDescription),
+                        $itemBrandId,
+                        str_replace('"', '\"', $itemBrandName),
+                        round($simplePrice, 2),
+                        round($finalPrice, 2),
+                        $itemDiscount,
+                        $itemPageIds,
+                        $itemPageNames,
+                        $itemUrl,
+                        $itemImages,
+                        $stockQty,
+                        $itemGender,
+                        $itemBarcode,
+                        $itemMpn,
+                        $itemSku
+                    ];
+
+                    $translations = [];
+                    // Add additional language columns
+                    foreach ($nonPrimaryStores as $store) {
+                        $storeId = $store->getId();
+                        $locale = $store->getConfig('general/locale/code'); // e.g., 'en_US'
+                        $lang = substr($locale, 0, 2); // 'en'
+                        
+                        // Clone the product object to avoid affecting the original
+                        $localizedProduct = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                            ->setStoreId($storeId)
+                            ->load($product->getId());
+
+                        // Now use $localizedProduct for localized data
+                        $localizedName = str_replace('"', '\"', $localizedProduct->getName());
+                        $localizedDescription = str_replace('"', '\"', $localizedProduct->getDescription());
+
+                        // Category names for this store
+                        $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                        $categoryCollection->addAttributeToSelect('name')
+                            ->addAttributeToFilter('entity_id', $categoryIds)
+                            ->setStoreId($storeId);
+                        $productCategories = [];
+                        foreach ($categoryCollection as $_category) {
+                            $productCategories[] = $_category->getName();
+                        }
+                        $localizedPageNames = str_replace('"', '\"', implode("|", $productCategories));
+
+                        $localizedUrl = $localizedProduct->getProductUrl();
+
+                        $translation = new stdClass();
+                        $translation->store = $storeId;
+                        $translation->language = $lang;
+                        $translation->name = $localizedName;
+                        $translations[] = $translation;
+                        $translation = new stdClass();
+                        $translation->store = $storeId;
+                        $translation->language = $lang;
+                        $translation->description = $localizedDescription;
+                        $translations[] = $translation;
+                        $translation = new stdClass();
+                        $translation->store = $storeId;
+                        $translation->language = $lang;
+                        $translation->page_names = $localizedPageNames;
+                        $translations[] = $translation;
+                        $translation = new stdClass();
+                        $translation->store = $storeId;
+                        $translation->language = $lang;
+                        $translation->url = $localizedUrl;
+                        $translations[] = $translation;
+
+                        // $itemData[] = $localizedName;
+                        // $itemData[] = $localizedDescription;
+                        // $itemData[] = $localizedPageNames;
+                        // $itemData[] = $localizedUrl;
+                    }
+                    // Add translations to the item data
+                    if ($hasTraslation) {
+                        $itemData[] = json_encode($translations);
+                    }
+
+                    $stream1->writeCsv($itemData, ";");
+                }
+
+                $currentPage++;
+            } while ($itemsOnPage === $pageSize);
+
+            $stream1->unlock();
+            $stream1->close();
+
+            if (!rename($tempFilePath, $filePath)) {
+                $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
+                throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
+            }
+
+            file_put_contents($hashFilePath, hash_file('sha256', $filePath));
+            $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
+        } catch (\Exception $e) {
+            $this->logger->error('Visidea - Error exporting items: ' . $e->getMessage());
+            if (file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
         }
+    }
 
-        $cartsCollection = $this->helper->getCartsCollection();
-        $ordersCollection = $this->helper->getOrdersCollection();
+    private function exportInteractions($csvDirectory, $token_id)
+    {
+        $pageSize = 500;
 
-        $this->logger->info('Visidea - Processing carts: ' . count($cartsCollection));
-        $this->logger->info('Visidea - Processing orders: ' . count($ordersCollection));
-        if (count($cartsCollection) > 0 || count($ordersCollection) > 0) {
-            $fileName = 'interactions_' . $token_id . '.csv';
-            $tempFileName = 'interactions_' . $token_id . '.temp';
-            $hashFileName = 'interactions_' . $token_id . '.hash';
-            $filePath = $csvDirectory . $fileName;
-            $tempFilePath = $csvDirectory . $tempFileName;
-            $hashFilePath = $csvDirectory . $hashFileName;
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $quoteCollectionFactory = $objectManager->get('\Magento\Quote\Model\ResourceModel\Quote\CollectionFactory');
+        $orderCollectionFactory = $objectManager->get('\Magento\Sales\Model\ResourceModel\Order\CollectionFactory');
 
-            try {
-                $stream2 = $this->directory->openFile($tempFilePath, 'w+');
-                $stream2->lock();
+        $fileName = 'interactions_' . $token_id . '.csv';
+        $tempFileName = 'interactions_' . $token_id . '.temp';
+        $hashFileName = 'interactions_' . $token_id . '.hash';
+        $filePath = $csvDirectory . $fileName;
+        $tempFilePath = $csvDirectory . $tempFileName;
+        $hashFilePath = $csvDirectory . $hashFileName;
 
-                $columns = $this->helper->getInteractionsColumnsHeader();
-                $stream2->writeCsv($columns, ";");
+        try {
+            $stream2 = $this->directory->openFile($tempFilePath, 'w+');
+            $stream2->lock();
+
+            $columns = $this->helper->getInteractionsColumnsHeader();
+            $stream2->writeCsv($columns, ";");
+
+            // Paginate through carts (quotes)
+            $currentPage = 1;
+            do {
+                $cartsCollection = $quoteCollectionFactory->create();
+                $cartsCollection->addFieldToSelect(['entity_id', 'customer_id', 'updated_at']);
+                $cartsCollection->addFieldToFilter('customer_id', ['neq' => 'NULL']);
+                $cartsCollection->setPageSize($pageSize);
+                $cartsCollection->setCurPage($currentPage);
+
+                $itemsOnPage = count($cartsCollection);
+
+                if ($itemsOnPage === 0) {
+                    break;
+                }
 
                 foreach ($cartsCollection as $interaction) {
                     $interactionItems = $interaction->getAllVisibleItems();
-                    $this->logger->info('Visidea - Processing interaction', [
-                        'interaction_id' => $interaction->getId(),
-                        'items_count' => count($interactionItems)
-                    ]);
-
-                    if (count($interactionItems) > 0) {
-                        foreach ($interactionItems as $interactionItem) {
-                            $this->logger->debug('Visidea - Processing cart item', [
-                                'product_id' => $interactionItem->getProductId()
-                            ]);
-
-                            if (!empty($interactionItem->getProductId())) {
-                                $interactionData = [
-                                    (int)$interaction->getCustomerId(),
-                                    $interactionItem->getProductId(),
-                                    'cart',
-                                    number_format((float)$interactionItem->getPrice(), 2),
-                                    (int)$interactionItem->getQty(),
-                                    date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
-                                ];
-
-                                $stream2->writeCsv($interactionData, ";");
-                            }
+                    foreach ($interactionItems as $interactionItem) {
+                        if (!empty($interactionItem->getProductId())) {
+                            $interactionData = [
+                                (int)$interaction->getCustomerId(),
+                                $interactionItem->getProductId(),
+                                'cart',
+                                number_format((float)$interactionItem->getPrice(), 2),
+                                (int)$interactionItem->getQty(),
+                                date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
+                            ];
+                            $stream2->writeCsv($interactionData, ";");
                         }
                     }
+                }
+                unset($cartsCollection);
+                $currentPage++;
+            } while ($itemsOnPage === $pageSize);
+
+            // Paginate through orders
+            $currentPage = 1;
+            do {
+                $ordersCollection = $orderCollectionFactory->create();
+                $ordersCollection->addFieldToSelect(['entity_id', 'customer_id', 'updated_at']);
+                $ordersCollection->addFieldToFilter('customer_id', ['neq' => 'NULL']);
+                $ordersCollection->setPageSize($pageSize);
+                $ordersCollection->setCurPage($currentPage);
+
+                $itemsOnPage = count($ordersCollection);
+
+                if ($itemsOnPage === 0) {
+                    break;
                 }
 
                 foreach ($ordersCollection as $interaction) {
                     $interactionItems = $interaction->getAllVisibleItems();
-                    $this->logger->info('Visidea - Processing interaction', [
-                        'interaction_id' => $interaction->getId(),
-                        'items_count' => count($interactionItems)
-                    ]);
-
-                    if (count($interactionItems) > 0) {
-                        foreach ($interactionItems as $interactionItem) {
-                            $this->logger->debug('Visidea - Processing order item', [
-                                'product_id' => $interactionItem->getProductId()
-                            ]);
-
-                            if (!empty($interactionItem->getProductId())) {
-                                $interactionData = [
-                                    (int)$interaction->getCustomerId(),
-                                    $interactionItem->getProductId(),
-                                    'purchase',
-                                    number_format((float)$interactionItem->getPrice(), 2),
-                                    (int)$interactionItem->getQtyOrdered(),
-                                    date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
-                                ];
-
-                                $stream2->writeCsv($interactionData, ";");
-                            }
+                    foreach ($interactionItems as $interactionItem) {
+                        if (!empty($interactionItem->getProductId())) {
+                            $interactionData = [
+                                (int)$interaction->getCustomerId(),
+                                $interactionItem->getProductId(),
+                                'purchase',
+                                number_format((float)$interactionItem->getPrice(), 2),
+                                (int)$interactionItem->getQtyOrdered(),
+                                date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
+                            ];
+                            $stream2->writeCsv($interactionData, ";");
                         }
                     }
                 }
+                unset($ordersCollection);
+                $currentPage++;
+            } while ($itemsOnPage === $pageSize);
 
-                $stream2->unlock();
-                $stream2->close();
+            $stream2->unlock();
+            $stream2->close();
 
-                if (!rename($tempFilePath, $filePath)) {
-                    $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                    throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                }
-
-                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
-                $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
-            } catch (\Exception $e) {
-                $this->logger->error('Visidea - Error exporting interactions: ' . $e->getMessage());
-                if (file_exists($tempFilePath)) {
-                    unlink($tempFilePath);
-                }
+            if (!rename($tempFilePath, $filePath)) {
+                $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
+                throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
             }
-        } else {
-            $this->logger->info('Visidea - No interactions found to export');
-        }        
-        
 
-        $customerCollection = $this->helper->getUsersCollection();
-        if ($customerCollection) {
-            $fileName = 'users_' . $token_id . '.csv';
-            $tempFileName = 'users_' . $token_id . '.temp';
-            $hashFileName = 'users_' . $token_id . '.hash';
-            $filePath = $csvDirectory . $fileName;
-            $tempFilePath = $csvDirectory . $tempFileName;
-            $hashFilePath = $csvDirectory . $hashFileName;
+            file_put_contents($hashFilePath, hash_file('sha256', $filePath));
+            $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
+        } catch (\Exception $e) {
+            $this->logger->error('Visidea - Error exporting interactions: ' . $e->getMessage());
+            if (file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
+        }
+    }
 
-            try {
-                $stream3 = $this->directory->openFile($tempFilePath, 'w+');
-                $stream3->lock();
+    private function exportUsers($csvDirectory, $token_id)
+    {
+        $pageSize = 500;
+        $currentPage = 1;
 
-                $columns = $this->helper->getUsersColumnsHeader();
-                foreach ($columns as $column) {
-                    $header[] = $column;
+        $fileName = 'users_' . $token_id . '.csv';
+        $tempFileName = 'users_' . $token_id . '.temp';
+        $hashFileName = 'users_' . $token_id . '.hash';
+        $filePath = $csvDirectory . $fileName;
+        $tempFilePath = $csvDirectory . $tempFileName;
+        $hashFilePath = $csvDirectory . $hashFileName;
+
+        try {
+            $stream3 = $this->directory->openFile($tempFilePath, 'w+');
+            $stream3->lock();
+
+            $columns = $this->helper->getUsersColumnsHeader();
+            $header = [];
+            foreach ($columns as $column) {
+                $header[] = $column;
+            }
+            $stream3->writeCsv($header, ";");
+
+            do {
+                $customerCollection = $this->helper->getUsersCollection();
+                $customerCollection->addAttributeToSelect([
+                    'firstname', 'lastname', 'email', 'dob', 'created_at'
+                ]);
+                $customerCollection->setPageSize($pageSize);
+                $customerCollection->setCurPage($currentPage);
+
+                $itemsOnPage = count($customerCollection);
+
+                if ($itemsOnPage === 0) {
+                    break;
                 }
-                $stream3->writeCsv($header, ";");
 
                 foreach ($customerCollection as $customer) {
                     $userId = $customer->getId();
@@ -428,71 +584,62 @@ class Export
                     $userZip = '';
                     $userState = '';
                     $userCountry = '';
-                    $userBirthday = date('Y-m-d H:i:s', strtotime($customer->getDob()));
-                    $userRegistrationDate = date('Y-m-d H:i:s', strtotime($customer->getCreatedAt()));
+                    $userBirthday = $customer->getDob() ? date('Y-m-d H:i:s', strtotime($customer->getDob())) : '';
+                    $userRegistrationDate = $customer->getCreatedAt() ? date('Y-m-d H:i:s', strtotime($customer->getCreatedAt())) : '';
 
-                    if (count($customer->getAddresses()) > 0) {
-                        $i = 0;
-                        foreach ($customer->getAddresses() as $address) {
-                            $i++;
-                            if ($i == 1) {
-                                $userAddress = implode(",", $address->getStreet());
-                                $userCity = $address->getCity();
-                                $userZip = $address->getPostcode();
-                                $userState = $address->getRegion();
-                                $userCountry = $address->getCountryId();
-                            }
-                        }
+                    // Use only default billing address if available
+                    $address = $customer->getDefaultBillingAddress();
+                    if ($address) {
+                        $userAddress = implode(",", $address->getStreet());
+                        $userCity = $address->getCity();
+                        $userZip = $address->getPostcode();
+                        $userState = $address->getRegion();
+                        $userCountry = $address->getCountryId();
                     }
 
                     if (!empty($userId)) {
-                        $userData = [];
-                        $userData[] = (int)$userId;
-                        $userData[] = $userEmail;
-                        $userData[] = str_replace('"', '\"', $userName);
-                        $userData[] = str_replace('"', '\"', $userSurname);
-                        $userData[] = str_replace('"', '\"', $userAddress);
-                        $userData[] = str_replace('"', '\"', $userCity);
-                        $userData[] = str_replace('"', '\"', $userZip);
-                        $userData[] = str_replace('"', '\"', $userState);
-                        $userData[] = strtolower($userCountry);
-                        $userData[] = $userBirthday;
-                        $userData[] = $userRegistrationDate;
+                        $userData = [
+                            (int)$userId,
+                            str_replace('"', '\"', $userEmail),
+                            str_replace('"', '\"', $userName),
+                            str_replace('"', '\"', $userSurname),
+                            str_replace('"', '\"', $userAddress),
+                            str_replace('"', '\"', $userCity),
+                            str_replace('"', '\"', $userZip),
+                            str_replace('"', '\"', $userState),
+                            strtolower($userCountry),
+                            $userBirthday,
+                            $userRegistrationDate
+                        ];
                         $stream3->writeCsv($userData, ";");
                     }
-
                 }
 
-                // Close and unlock the file
-                $stream3->unlock();
-                $stream3->close();
+                unset($customerCollection);
+                $currentPage++;
+            } while ($itemsOnPage === $pageSize);
 
-                // Rename the temporary file to the final file name
-                if (!rename($tempFilePath, $filePath)) {
-                    $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                    throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
-                }
+            // Close and unlock the file
+            $stream3->unlock();
+            $stream3->close();
 
-                file_put_contents($hashFilePath, hash_file('sha256', $filePath));
-
-                $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
-            } catch (\Exception $e) {
-                $this->logger->error('Visidea - Error exporting users: ' . $e->getMessage());
-
-                // Attempt to clean up the temporary file if an error occurred
-                if (file_exists($tempFilePath)) {
-                    unlink($tempFilePath);
-                }
+            // Rename the temporary file to the final file name
+            if (!rename($tempFilePath, $filePath)) {
+                $this->logger->error('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
+                throw new \Exception('Visidea - Failed to rename the file from ' . $tempFileName . ' to ' . $fileName);
             }
-            
-        } else {
-            $this->logger->info('Visidea - No users found to export');
+
+            file_put_contents($hashFilePath, hash_file('sha256', $filePath));
+
+            $this->logger->info('Visidea - File exported and renamed successfully: ' . $filePath);
+        } catch (\Exception $e) {
+            $this->logger->error('Visidea - Error exporting users: ' . $e->getMessage());
+
+            // Attempt to clean up the temporary file if an error occurred
+            if (file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
         }
-
-        $this->logger->info('Visidea - cron ended');
-
-        return $this;
-
     }
 
 }

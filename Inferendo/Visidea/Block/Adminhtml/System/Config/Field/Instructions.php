@@ -116,6 +116,13 @@ class Instructions extends \Magento\Config\Block\System\Config\Form\Field
             $this->helper->flushCache();
             $reload = true;
         }
+
+        $cronhour = $this->helper->getCronHour();
+        if ($cronhour == null) {
+            $this->helper->setConfig('general', 'cronhour', 1);
+            $this->helper->flushCache();
+            $reload = true;
+        }
         
         $items_url = $this->helper->getItemsExportUrl();
         $users_url = $this->helper->getCustomerExportUrl();

@@ -36,6 +36,12 @@
                 <field id="export_csv" translate="label" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
                     <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\InteractionExport</frontend_model>
                 </field>
+                <field id="cronhour" translate="label" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Cron Hour Interval</label>
+                    <comment>Set how many hours between each cron process.</comment>
+                    <frontend_model>Inferendo\Visidea\Block\Adminhtml\System\Config\Field\CronHour</frontend_model>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
             </group>
         </section>
     </system>

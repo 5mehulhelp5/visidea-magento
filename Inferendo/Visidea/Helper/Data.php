@@ -157,7 +157,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param string $field   field
      * @param int    $storeId storeId
      *
-     * @return array         return the confif
+     * @return string         return the config
      */
     public function getConfig($group, $field, $storeId = 0)
     {
@@ -398,6 +398,31 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $productIds[] = $item->getProductId();
         }
         return implode(',', $productIds);
+    }
+
+    /**
+     * Method getCronHour
+     *
+     * @return string         return cronhour
+     */
+    public function getCronHour()
+    {
+        return $this->getConfig('general', 'cronhour');
+    }
+
+    /**
+     * Method saveConfig
+     *
+     * @return void
+     */
+    public function saveConfig($path, $value, $scope = \Magento\Store\Model\ScopeInterface::SCOPE_DEFAULT, $scopeId = 0)
+    {
+        $this->writeConfig->save(
+            'inferendo_visidea/' . $path,
+            $value,
+            $scope,
+            $scopeId
+        );
     }
 
 }

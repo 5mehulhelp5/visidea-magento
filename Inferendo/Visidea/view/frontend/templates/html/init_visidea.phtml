@@ -59,9 +59,9 @@ if ($helper->isEnabled()):
 
     <script type="text/javascript">
         require(["Visidea"], function (Visidea) {
-            document.addEventListener('DOMContentLoaded', function() {
-                visidea('<?php echo $website ?>', '<?php echo $public_token ?>', '<?php echo $language; ?>');
-            });
+            // document.addEventListener('DOMContentLoaded', function() {
+            window.visidea('<?php echo $website ?>', '<?php echo $public_token ?>', '<?php echo $language; ?>');
+            // });
         });
     </script>
 

@@ -1,8 +1,14 @@
 <?xml version="1.0" ?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
-	<group id="default">
-		<job instance="Inferendo\Visidea\Cron\Export" method="execute" name="inferendo_visidea_cron">
-			<schedule>0 * * * *</schedule>
-		</job>
-	</group>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/crontab.xsd">
+    <group id="default">
+        <job name="visidea_export_items" instance="Inferendo\Visidea\Cron\Export" method="exportItemsCron">
+            <schedule>* * * * *</schedule>
+        </job>
+        <job name="visidea_export_interactions" instance="Inferendo\Visidea\Cron\Export" method="exportInteractionsCron">
+            <schedule>* * * * *</schedule>
+        </job>
+        <job name="visidea_export_users" instance="Inferendo\Visidea\Cron\Export" method="exportUsersCron">
+            <schedule>* * * * *</schedule>
+        </job>
+    </group>
 </config>
