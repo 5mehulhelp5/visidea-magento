@@ -190,8 +190,9 @@ class Export
                 $this->logger->info('Visidea - Processing page: ' . $currentPage);
                 $productsCollection = $productCollectionFactory->create();
                 $productsCollection->addAttributeToSelect([
-                    'name', 'description', 'manufacturer', 'price', 'final_price', 'sku', 'barcode', 'mpn', 'visibility', 'media_gallery'
+                    'name', 'description', 'manufacturer', 'price', 'final_price', 'sku', 'barcode', 'mpn', 'visibility', 'media_gallery', 'url_key'
                 ]);
+                $productsCollection->setStoreId($primaryStoreId);
                 $productsCollection->setPageSize($pageSize);
                 $productsCollection->setCurPage($currentPage);
 
@@ -272,13 +273,9 @@ class Export
                     $itemPageNames = str_replace('"', '\"', implode("|", $categoryNames));
 
                     // Product URL
-                    $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
-                    $defaultStoreId = $storeManager->getDefaultStoreView()->getId();
-
-                    $product = $objectManager->create(\Magento\Catalog\Model\Product::class)
-                        ->setStoreId($defaultStoreId)
-                        ->load($product->getId());
-
+                    // $product = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                    //     ->setStoreId($primaryStoreId)
+                    //     ->load($product->getId());
                     $itemUrl = $product->getProductUrl();
 
                     // Images
@@ -327,10 +324,10 @@ class Export
 
                     $itemData = [
                         (int)$itemId,
-                        str_replace('"', '\"', $itemName),
-                        str_replace('"', '\"', $itemDescription),
+                        str_replace('"', '\"', $itemName ?? ''),
+                        str_replace('"', '\"', $itemDescription ?? ''),
                         $itemBrandId,
-                        str_replace('"', '\"', $itemBrandName),
+                        str_replace('"', '\"', $itemBrandName ?? ''),
                         round($simplePrice, 2),
                         round($finalPrice, 2),
                         $itemDiscount,
