@@ -258,13 +258,15 @@ class Export
 
                     // Category IDs and names
                     $categoryIds = $product->getCategoryIds();
-                    $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
-                    $categoryCollection->addAttributeToSelect('name')
-                        ->addAttributeToFilter('entity_id', $categoryIds)
-                        ->setStoreId($primaryStoreId);
                     $categoryNames = [];
-                    foreach ($categoryCollection as $_category) {
-                        $categoryNames[] = $_category->getName();
+                    if (!empty($categoryIds)) {
+                        $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                        $categoryCollection->addAttributeToSelect('name')
+                            ->addAttributeToFilter('entity_id', $categoryIds)
+                            ->setStoreId($primaryStoreId);
+                        foreach ($categoryCollection as $_category) {
+                            $categoryNames[] = $_category->getName();
+                        }
                     }
                     $itemPageIds = implode("|", $categoryIds);
                     $itemPageNames = str_replace('"', '\"', implode("|", $categoryNames));
@@ -360,15 +362,18 @@ class Export
                         $localizedDescription = str_replace('"', '\"', $localizedProduct->getDescription());
 
                         // Category names for this store
-                        $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
-                        $categoryCollection->addAttributeToSelect('name')
-                            ->addAttributeToFilter('entity_id', $categoryIds)
-                            ->setStoreId($storeId);
-                        $productCategories = [];
-                        foreach ($categoryCollection as $_category) {
-                            $productCategories[] = $_category->getName();
+                        $localizedPageNames = '';
+                        if (!empty($categoryIds)) {
+                            $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                            $categoryCollection->addAttributeToSelect('name')
+                                ->addAttributeToFilter('entity_id', $categoryIds)
+                                ->setStoreId($storeId);
+                            $productCategories = [];
+                            foreach ($categoryCollection as $_category) {
+                                $productCategories[] = $_category->getName();
+                            }
+                            $localizedPageNames = str_replace('"', '\"', implode("|", $productCategories));
                         }
-                        $localizedPageNames = str_replace('"', '\"', implode("|", $productCategories));
 
                         $localizedUrl = $localizedProduct->getProductUrl();
 
