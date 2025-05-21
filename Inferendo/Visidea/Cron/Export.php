@@ -586,8 +586,8 @@ class Export
                     $userZip = '';
                     $userState = '';
                     $userCountry = '';
-                    $userBirthday = $customer->getDob() ? date('Y-m-d H:i:s', strtotime($customer->getDob())) : '';
-                    $userRegistrationDate = $customer->getCreatedAt() ? date('Y-m-d H:i:s', strtotime($customer->getCreatedAt())) : '';
+                    $userBirthday = $customer->getDob() ? date('Y-m-d', strtotime($customer->getDob())) : '';
+                    $userRegistrationDate = $customer->getCreatedAt() ? date(DATE_ISO8601, strtotime($customer->getCreatedAt())) : '';
 
                     // Use only default billing address if available
                     $address = $customer->getDefaultBillingAddress();
