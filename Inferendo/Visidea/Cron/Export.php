@@ -169,6 +169,7 @@ class Export
             foreach ($columns as $column) {
                 $headers[] = $column;
             }
+            $headers[] = 'attributes';
             $nonPrimaryStores = [];
             $hasTraslation = false;
             foreach ($stores as $store) {
@@ -192,9 +193,19 @@ class Export
                 $productsCollection->addAttributeToSelect([
                     'name', 'description', 'manufacturer', 'price', 'final_price', 'sku', 'barcode', 'mpn', 'visibility', 'media_gallery', 'url_key'
                 ]);
+                $productsCollection->addAttributeToFilter('type_id', ['in' => ['simple', 'virtual', 'downloadable', 'configurable']]);
                 $productsCollection->setStoreId($primaryStoreId);
                 $productsCollection->setPageSize($pageSize);
                 $productsCollection->setCurPage($currentPage);
+
+                // Join with catalog_product_super_link to filter out simple product variants that are children of configurable products
+                $productsCollection->getSelect()->joinLeft(
+                    ['cpsl' => $productsCollection->getTable('catalog_product_super_link')],
+                    'e.entity_id = cpsl.product_id',
+                    []
+                )->where('cpsl.parent_id IS NULL OR e.type_id != "simple"');
+
+                // $this->logger->info('SQL: ' . $productsCollection->getSelect()->__toString());
 
                 $itemsOnPage = count($productsCollection);
 
@@ -204,19 +215,19 @@ class Export
 
                 foreach ($productsCollection as $product) {
                     // Only export simple, virtual, downloadable, and configurable products
-                    if (!in_array($product->getTypeId(), ['simple', 'virtual', 'downloadable', 'configurable'])) {
-                        continue;
-                    }
+                    // if (!in_array($product->getTypeId(), ['simple', 'virtual', 'downloadable', 'configurable'])) {
+                    //     continue;
+                    // }
 
                     // If the simple product is a child of a configurable, skip it (to avoid duplicate variants)
-                    if ($product->getTypeId() === 'simple') {
-                        $parentIds = $objectManager
-                            ->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')
-                            ->getParentIdsByChild($product->getId());
-                        if (!empty($parentIds)) {
-                            continue;
-                        }
-                    }
+                    // if ($product->getTypeId() === 'simple') {
+                    //     $parentIds = $objectManager
+                    //         ->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')
+                    //         ->getParentIdsByChild($product->getId());
+                    //     if (!empty($parentIds)) {
+                    //         continue;
+                    //     }
+                    // }
 
                     $visibility = $product->getAttributeText('visibility');
                     if ($visibility === 'Not Visible Individually') {
@@ -270,7 +281,7 @@ class Export
                         }
                     }
                     $itemPageIds = implode("|", $categoryIds);
-                    $itemPageNames = str_replace('"', '\"', implode("|", $categoryNames));
+                    $itemPageNames = implode("|", $categoryNames);
 
                     // Product URL
                     // $product = $objectManager->create(\Magento\Catalog\Model\Product::class)
@@ -320,14 +331,13 @@ class Export
                     if (is_array($itemGender)) {
                         $itemGender = implode('|', $itemGender);
                     }
-                    $itemGender = str_replace('"', '\"', $itemGender);
 
                     $itemData = [
                         (int)$itemId,
-                        str_replace('"', '\"', $itemName ?? ''),
-                        str_replace('"', '\"', $itemDescription ?? ''),
+                        $itemName,
+                        $itemDescription,
                         $itemBrandId,
-                        str_replace('"', '\"', $itemBrandName ?? ''),
+                        $itemBrandName,
                         round($simplePrice, 2),
                         round($finalPrice, 2),
                         $itemDiscount,
@@ -342,6 +352,74 @@ class Export
                         $itemSku
                     ];
 
+                    // Build attributes for all stores (including primary)
+                    $attributes = [];
+                    foreach ($stores as $store) {
+                        $storeId = $store->getId();
+                        $currency = $store->getCurrentCurrencyCode();
+
+                        // Load product in store context
+                        $storeProduct = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                            ->setStoreId($storeId)
+                            ->load($product->getId());
+
+                        // Check if product is assigned to the website of this store
+                        $websiteIds = $storeProduct->getWebsiteIds();
+                        $storeWebsiteId = $store->getWebsiteId();
+                        $isInWebsite = in_array($storeWebsiteId, $websiteIds);
+
+                        // Check if product is enabled in this store
+                        $status = $storeProduct->getStatus() == \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED;
+
+                        // Check visibility in this store
+                        $visibility = $storeProduct->getVisibility() != \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE;
+
+                        // Final visible flag: must be in website, enabled, and visible
+                        $visible = $isInWebsite && $status && $visibility;
+
+                        // Prices
+                        $price = (float)$storeProduct->getPrice();
+                        $marketPrice = (float)$storeProduct->getFinalPrice();
+                        $discount = ($marketPrice < $price && $price > 0)
+                            ? 100 - round(($marketPrice / $price) * 100)
+                            : 0;
+
+                        // Stock
+                        $stockQty = 0;
+                        try {
+                            $stockRegistry = $objectManager->get('\Magento\CatalogInventory\Api\StockRegistryInterface');
+                            if ($storeProduct->getTypeId() === 'configurable') {
+                                $childProducts = $storeProduct->getTypeInstance()->getUsedProducts($storeProduct);
+                                foreach ($childProducts as $child) {
+                                    $childStockItem = $stockRegistry->getStockItem($child->getId());
+                                    $stockQty += $childStockItem ? (int)$childStockItem->getQty() : 0;
+                                }
+                            } else {
+                                $stockItem = $stockRegistry->getStockItem($storeProduct->getId());
+                                $stockQty = $stockItem ? (int)$stockItem->getQty() : 0;
+                            }
+                        } catch (\Exception $e) {
+                            $stockQty = 0;
+                        }
+
+                        // URL only if visible
+                        $url = '';
+                        if ($visible) {
+                            $url = $storeProduct->getProductUrl();
+                        }
+
+                        $attributes["visible_{$storeId}"] = $visible;
+                        $attributes["currency_{$storeId}"] = $currency;
+                        $attributes["price_{$storeId}"] = $price;
+                        $attributes["market_price_{$storeId}"] = $marketPrice;
+                        $attributes["discount_{$storeId}"] = $discount;
+                        $attributes["stock_{$storeId}"] = $stockQty;
+                        $attributes["url_{$storeId}"] = $url;
+                    }
+
+                    // Add attributes column
+                    $itemData[] = json_encode($attributes);
+
                     $translations = [];
                     // Add additional language columns
                     foreach ($nonPrimaryStores as $store) {
@@ -355,8 +433,8 @@ class Export
                             ->load($product->getId());
 
                         // Now use $localizedProduct for localized data
-                        $localizedName = str_replace('"', '\"', $localizedProduct->getName());
-                        $localizedDescription = str_replace('"', '\"', $localizedProduct->getDescription());
+                        $localizedName = $localizedProduct->getName();
+                        $localizedDescription = $localizedProduct->getDescription();
 
                         // Category names for this store
                         $localizedPageNames = '';
@@ -369,7 +447,7 @@ class Export
                             foreach ($categoryCollection as $_category) {
                                 $productCategories[] = $_category->getName();
                             }
-                            $localizedPageNames = str_replace('"', '\"', implode("|", $productCategories));
+                            $localizedPageNames = implode("|", $productCategories);
                         }
 
                         $localizedUrl = $localizedProduct->getProductUrl();
@@ -405,7 +483,16 @@ class Export
                         $itemData[] = json_encode($translations);
                     }
 
-                    $stream1->writeCsv($itemData, ";");
+                    // Quote and escape all fields
+                    foreach ($itemData as $k => $v) {
+                        $itemData[$k] = $this->escapeCsvField($v);
+                    }
+                    
+                    // Add the item data to the CSV line
+                    $csvLine = implode(';', $itemData) . "\n";
+
+                    // Write to CSV
+                    $stream1->write($csvLine);
                 }
 
                 $currentPage++;
@@ -478,7 +565,8 @@ class Export
                                 (int)$interactionItem->getQty(),
                                 date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
                             ];
-                            $stream2->writeCsv($interactionData, ";");
+                            $csvLine = implode(';', $interactionData) . "\n";
+                            $stream2->write($csvLine);
                         }
                     }
                 }
@@ -513,7 +601,8 @@ class Export
                                 (int)$interactionItem->getQtyOrdered(),
                                 date(DATE_ISO8601, strtotime($interaction->getUpdatedAt()))
                             ];
-                            $stream2->writeCsv($interactionData, ";");
+                            $csvLine = implode(';', $interactionData) . "\n";
+                            $stream2->write($csvLine);
                         }
                     }
                 }
@@ -602,18 +691,23 @@ class Export
                     if (!empty($userId)) {
                         $userData = [
                             (int)$userId,
-                            str_replace('"', '\"', $userEmail),
-                            str_replace('"', '\"', $userName),
-                            str_replace('"', '\"', $userSurname),
-                            str_replace('"', '\"', $userAddress),
-                            str_replace('"', '\"', $userCity),
-                            str_replace('"', '\"', $userZip),
-                            str_replace('"', '\"', $userState),
+                            $userEmail,
+                            $userName,
+                            $userSurname,
+                            $userAddress,
+                            $userCity,
+                            $userZip,
+                            $userState,
                             strtolower($userCountry),
                             $userBirthday,
                             $userRegistrationDate
                         ];
-                        $stream3->writeCsv($userData, ";");
+                        // Escape all fields
+                        foreach ($userData as $k => $v) {
+                            $userData[$k] = $this->escapeCsvField($v);
+                        }
+                        $csvLine = implode(';', $userData) . "\n";
+                        $stream3->write($csvLine);
                     }
                 }
 
@@ -642,6 +736,24 @@ class Export
                 unlink($tempFilePath);
             }
         }
+    }
+
+    // Utility function to escape double quotes with backslash
+    private function escapeCsvField($value) {
+        if (is_null($value)) {
+            return '""';
+        }
+        if (is_numeric($value) || is_bool($value)) {
+            return $value;
+        }
+        // Convert to string
+        $value = (string)$value;
+        // Escape backslashes with another backslash
+        $value = str_replace('\\', '\\\\', $value);
+        // Escape double quotes with backslash
+        $value = str_replace('"', '\\"', $value);
+        // Wrap in double quotes
+        return '"' . $value . '"';
     }
 
 }
