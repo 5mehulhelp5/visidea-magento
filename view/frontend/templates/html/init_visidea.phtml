@@ -39,6 +39,14 @@ if ($helper->isEnabled()):
         $cartProductIdsString = $helper->getCartProductIds();
     }
 
+    // Get the store ID
+    $storeId = $block->getStoreId();
+    if (!$storeId) {
+        $storeId = \Magento\Framework\App\ObjectManager::getInstance()
+            ->get(\Magento\Store\Model\StoreManagerInterface::class)
+            ->getStore()
+            ->getId();
+    }
 ?>
 
 <?php if ($page == 'home'): ?>
@@ -60,7 +68,7 @@ if ($helper->isEnabled()):
     <script type="text/javascript">
         require(["Visidea"], function (Visidea) {
             // document.addEventListener('DOMContentLoaded', function() {
-            window.visidea('<?php echo $website ?>', '<?php echo $public_token ?>', '<?php echo $language; ?>');
+            window.visidea('<?php echo $website ?>', '<?php echo $public_token ?>', '<?php echo $language; ?>', '<?php echo $storeId; ?>');
             // });
         });
     </script>
