@@ -10,19 +10,13 @@
 ## 2. Install via Composer
 
 1. SSH into your Magento server.
-2. Add your Marketplace authentication keys to your Magento instance (if not already done):
-
-    ```sh
-    composer config --global http-basic.repo.magento.com <public_key> <private_key>
-    ```
-
-3. Require the Visidea module:
+2. Require the Visidea module from Packagist:
 
     ```sh
     composer require inferendo/module-visidea
     ```
 
-4. Install the module:
+3. Install the module:
 
     ```sh
     php bin/magento setup:upgrade
