@@ -38,6 +38,7 @@ class Export
     protected $directoryList;
     protected $fileIo;
     protected $logger;
+    protected $objectManager;
 
     /**
      * Method __construct
@@ -58,6 +59,7 @@ class Export
         $this->directoryList = $directoryList;
         $this->fileIo = $fileIo;
         $this->logger = $logger;
+        $this->objectManager = \Magento\Framework\App\ObjectManager::getInstance();
     }
 
     public function exportItemsCron()
@@ -158,8 +160,7 @@ class Export
             $stream1 = $this->directory->openFile($tempFilePath, 'w+');
             $stream1->lock();
 
-            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-            $storeManager = $objectManager->get('\Magento\Store\Model\StoreManagerInterface');
+            $storeManager = $this->objectManager->get('\Magento\Store\Model\StoreManagerInterface');
             $stores = $storeManager->getStores();
             $primaryStoreId = $storeManager->getDefaultStoreView()->getId();
 
@@ -178,15 +179,11 @@ class Export
                     if (!$hasTraslation)
                         $headers[] = 'translations';
                     $hasTraslation = true;
-                    // $headers[] = 'name_' . $store->getCode();
-                    // $headers[] = 'description_' . $store->getCode();
-                    // $headers[] = 'page_names_' . $store->getCode();
-                    // $headers[] = 'url_' . $store->getCode();
                 }
             }
             $stream1->writeCsv($headers, ";");
 
-            $productCollectionFactory = $objectManager->get('\Magento\Catalog\Model\ResourceModel\Product\CollectionFactory');
+            $productCollectionFactory = $this->objectManager->get('\Magento\Catalog\Model\ResourceModel\Product\CollectionFactory');
             do {
                 $this->logger->info('Visidea - Processing page: ' . $currentPage);
                 $productsCollection = $productCollectionFactory->create();
@@ -198,15 +195,6 @@ class Export
                 $productsCollection->setPageSize($pageSize);
                 $productsCollection->setCurPage($currentPage);
 
-                // Join with catalog_product_super_link to filter out simple product variants that are children of configurable products
-                $productsCollection->getSelect()->joinLeft(
-                    ['cpsl' => $productsCollection->getTable('catalog_product_super_link')],
-                    'e.entity_id = cpsl.product_id',
-                    []
-                )->where('cpsl.parent_id IS NULL OR e.type_id != "simple"');
-
-                // $this->logger->info('SQL: ' . $productsCollection->getSelect()->__toString());
-
                 $itemsOnPage = count($productsCollection);
 
                 if ($itemsOnPage === 0) {
@@ -215,22 +203,21 @@ class Export
 
                 foreach ($productsCollection as $product) {
                     // Only export simple, virtual, downloadable, and configurable products
-                    // if (!in_array($product->getTypeId(), ['simple', 'virtual', 'downloadable', 'configurable'])) {
-                    //     continue;
-                    // }
+                    if (!in_array($product->getTypeId(), ['simple', 'virtual', 'downloadable', 'configurable'])) {
+                        continue;
+                    }
 
                     // If the simple product is a child of a configurable, skip it (to avoid duplicate variants)
-                    // if ($product->getTypeId() === 'simple') {
-                    //     $parentIds = $objectManager
-                    //         ->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')
-                    //         ->getParentIdsByChild($product->getId());
-                    //     if (!empty($parentIds)) {
-                    //         continue;
-                    //     }
-                    // }
+                    if ($product->getTypeId() === 'simple') {
+                        $parentIds = $this->objectManager
+                            ->create('Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable')
+                            ->getParentIdsByChild($product->getId());
+                        if (!empty($parentIds)) {
+                            continue;
+                        }
+                    }
 
-                    $visibility = $product->getAttributeText('visibility');
-                    if ($visibility === 'Not Visible Individually') {
+                    if ($product->getVisibility() == \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE) {
                         continue;
                     }
 
@@ -272,7 +259,7 @@ class Export
                     $categoryIds = $product->getCategoryIds();
                     $categoryNames = [];
                     if (!empty($categoryIds)) {
-                        $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                        $categoryCollection = $this->objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
                         $categoryCollection->addAttributeToSelect('name')
                             ->addAttributeToFilter('entity_id', $categoryIds)
                             ->setStoreId($primaryStoreId);
@@ -284,9 +271,6 @@ class Export
                     $itemPageNames = implode("|", $categoryNames);
 
                     // Product URL
-                    // $product = $objectManager->create(\Magento\Catalog\Model\Product::class)
-                    //     ->setStoreId($primaryStoreId)
-                    //     ->load($product->getId());
                     $itemUrl = $product->getProductUrl();
 
                     // Images
@@ -294,7 +278,7 @@ class Export
                     $images = [];
                     if (!$mediaGallery || count($mediaGallery) === 0) {
                         // Fallback: reload product for images
-                        $productWithImages = $objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
+                        $productWithImages = $this->objectManager->create('Magento\Catalog\Model\Product')->load($product->getId());
                         $mediaGallery = $productWithImages->getMediaGalleryImages();
                     }
                     if ($mediaGallery) {
@@ -305,24 +289,7 @@ class Export
                     $itemImages = implode("|", $images);
 
                     // Stock
-                    $stockQty = 0;
-                    try {
-                        $stockRegistry = $objectManager->get('\Magento\CatalogInventory\Api\StockRegistryInterface');
-                        if ($product->getTypeId() === 'configurable') {
-                            // Sum stock of all variants
-                            $childProducts = $product->getTypeInstance()->getUsedProducts($product);
-                            foreach ($childProducts as $child) {
-                                $childStockItem = $stockRegistry->getStockItem($child->getId());
-                                $stockQty += $childStockItem ? (int)$childStockItem->getQty() : 0;
-                            }
-                        } else {
-                            // Simple product stock
-                            $stockItem = $stockRegistry->getStockItem($product->getId());
-                            $stockQty = $stockItem ? (int)$stockItem->getQty() : 0;
-                        }
-                    } catch (\Exception $e) {
-                        $stockQty = 0;
-                    }
+                    $stockQty = $product->isSaleable() ? 1 : 0;
 
                     // Gender (if attribute exists)
                     $itemGender = $product->getResource()->getAttribute('gender')
@@ -359,7 +326,7 @@ class Export
                         $currency = $store->getCurrentCurrencyCode();
 
                         // Load product in store context
-                        $storeProduct = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                        $storeProduct = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
                             ->setStoreId($storeId)
                             ->load($product->getId());
 
@@ -378,29 +345,70 @@ class Export
                         $visible = $isInWebsite && $status && $visibility;
 
                         // Prices
-                        $price = (float)$storeProduct->getPrice();
-                        $marketPrice = (float)$storeProduct->getFinalPrice();
-                        $discount = ($marketPrice < $price && $price > 0)
-                            ? 100 - round(($marketPrice / $price) * 100)
+                        if ($storeProduct->getTypeId() === 'configurable') {
+                            $childProducts = $storeProduct->getTypeInstance()->getUsedProducts($storeProduct);
+                            $minPriceSimple = null;
+                            $minPriceFinal = null;
+                            foreach ($childProducts as $child) {
+                                $childInStore = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
+                                    ->setStoreId($storeId)
+                                    ->load($child->getId());
+                                $childPriceSimple = $childInStore->getPrice();
+                                $childPriceFinal = $childInStore->getFinalPrice();
+                                if ($minPriceSimple === null || ($childPriceSimple !== null && $childPriceSimple < $minPriceSimple)) {
+                                    $minPriceSimple = $childPriceSimple;
+                                }
+                                if ($minPriceFinal === null || ($childPriceFinal !== null && $childPriceFinal < $minPriceFinal)) {
+                                    $minPriceFinal = $childPriceFinal;
+                                }
+                            }
+                            // Fallback to default store if needed
+                            if ($minPriceSimple === null || $minPriceFinal === null) {
+                                $defaultProduct = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
+                                    ->setStoreId($primaryStoreId)
+                                    ->load($product->getId());
+                                $childProductsDefault = $defaultProduct->getTypeInstance()->getUsedProducts($defaultProduct);
+                                foreach ($childProductsDefault as $child) {
+                                    $childPriceSimple = $child->getPrice();
+                                    $childPriceFinal = $child->getFinalPrice();
+                                    if ($minPriceSimple === null || ($childPriceSimple !== null && $childPriceSimple < $minPriceSimple)) {
+                                        $minPriceSimple = $childPriceSimple;
+                                    }
+                                    if ($minPriceFinal === null || ($childPriceFinal !== null && $childPriceFinal < $minPriceFinal)) {
+                                        $minPriceFinal = $childPriceFinal;
+                                    }
+                                }
+                            }
+                            $mSimplePrice = (float)$minPriceSimple;
+                            $mMarketPrice = (float)$minPriceFinal;
+                        } else {
+                            // Simple, virtual, downloadable
+                            $mSimplePrice = $storeProduct->getPrice();
+                            $mMarketPrice = $storeProduct->getFinalPrice();
+                            if ($mSimplePrice === null || $mSimplePrice === '' || $mSimplePrice === false) {
+                                $defaultProduct = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
+                                    ->setStoreId($primaryStoreId)
+                                    ->load($product->getId());
+                                $mSimplePrice = $defaultProduct->getPrice();
+                            }
+                            if ($mMarketPrice === null || $mMarketPrice === '' || $mMarketPrice === false) {
+                                if (!isset($defaultProduct)) {
+                                    $defaultProduct = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
+                                        ->setStoreId($primaryStoreId)
+                                        ->load($product->getId());
+                                }
+                                $mMarketPrice = $defaultProduct->getFinalPrice();
+                            }
+                            $mSimplePrice = (float)$mSimplePrice;
+                            $mMarketPrice = (float)$mMarketPrice;
+                        }
+
+                        $discount = ($mMarketPrice < $mSimplePrice && $mSimplePrice > 0)
+                            ? 100 - round(($mMarketPrice / $mSimplePrice) * 100)
                             : 0;
 
                         // Stock
-                        $stockQty = 0;
-                        try {
-                            $stockRegistry = $objectManager->get('\Magento\CatalogInventory\Api\StockRegistryInterface');
-                            if ($storeProduct->getTypeId() === 'configurable') {
-                                $childProducts = $storeProduct->getTypeInstance()->getUsedProducts($storeProduct);
-                                foreach ($childProducts as $child) {
-                                    $childStockItem = $stockRegistry->getStockItem($child->getId());
-                                    $stockQty += $childStockItem ? (int)$childStockItem->getQty() : 0;
-                                }
-                            } else {
-                                $stockItem = $stockRegistry->getStockItem($storeProduct->getId());
-                                $stockQty = $stockItem ? (int)$stockItem->getQty() : 0;
-                            }
-                        } catch (\Exception $e) {
-                            $stockQty = 0;
-                        }
+                        $stockQty = $storeProduct->isSaleable() ? 1 : 0;
 
                         // URL only if visible
                         $url = '';
@@ -410,8 +418,8 @@ class Export
 
                         $attributes["visible_{$storeId}"] = $visible;
                         $attributes["currency_{$storeId}"] = $currency;
-                        $attributes["price_{$storeId}"] = $price;
-                        $attributes["market_price_{$storeId}"] = $marketPrice;
+                        $attributes["price_{$storeId}"] = round($mSimplePrice, 2);
+                        $attributes["market_price_{$storeId}"] = round($mMarketPrice, 2);
                         $attributes["discount_{$storeId}"] = $discount;
                         $attributes["stock_{$storeId}"] = $stockQty;
                         $attributes["url_{$storeId}"] = $url;
@@ -428,7 +436,7 @@ class Export
                         $lang = substr($locale, 0, 2); // 'en'
                         
                         // Clone the product object to avoid affecting the original
-                        $localizedProduct = $objectManager->create(\Magento\Catalog\Model\Product::class)
+                        $localizedProduct = $this->objectManager->create(\Magento\Catalog\Model\Product::class)
                             ->setStoreId($storeId)
                             ->load($product->getId());
 
@@ -439,7 +447,7 @@ class Export
                         // Category names for this store
                         $localizedPageNames = '';
                         if (!empty($categoryIds)) {
-                            $categoryCollection = $objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
+                            $categoryCollection = $this->objectManager->create('Magento\Catalog\Model\ResourceModel\Category\Collection');
                             $categoryCollection->addAttributeToSelect('name')
                                 ->addAttributeToFilter('entity_id', $categoryIds)
                                 ->setStoreId($storeId);
@@ -452,31 +460,10 @@ class Export
 
                         $localizedUrl = $localizedProduct->getProductUrl();
 
-                        $translation = new stdClass();
-                        $translation->store = $storeId;
-                        $translation->language = $lang;
-                        $translation->name = $localizedName;
-                        $translations[] = $translation;
-                        $translation = new stdClass();
-                        $translation->store = $storeId;
-                        $translation->language = $lang;
-                        $translation->description = $localizedDescription;
-                        $translations[] = $translation;
-                        $translation = new stdClass();
-                        $translation->store = $storeId;
-                        $translation->language = $lang;
-                        $translation->page_names = $localizedPageNames;
-                        $translations[] = $translation;
-                        $translation = new stdClass();
-                        $translation->store = $storeId;
-                        $translation->language = $lang;
-                        $translation->url = $localizedUrl;
-                        $translations[] = $translation;
-
-                        // $itemData[] = $localizedName;
-                        // $itemData[] = $localizedDescription;
-                        // $itemData[] = $localizedPageNames;
-                        // $itemData[] = $localizedUrl;
+                        $this->addTranslation($translations, $storeId, $lang, 'name', $localizedName);
+                        $this->addTranslation($translations, $storeId, $lang, 'description', $localizedDescription);
+                        $this->addTranslation($translations, $storeId, $lang, 'page_names', $localizedPageNames);
+                        $this->addTranslation($translations, $storeId, $lang, 'url', $localizedUrl);
                     }
                     // Add translations to the item data
                     if ($hasTraslation) {
@@ -516,13 +503,21 @@ class Export
         }
     }
 
+    function addTranslation(&$translations, $storeId, $lang, $field, $value)
+    {
+        $obj = new \stdClass();
+        $obj->store = $storeId;
+        $obj->language = $lang;
+        $obj->$field = $value;
+        $translations[] = $obj;
+    }
+
     private function exportInteractions($csvDirectory, $token_id)
     {
         $pageSize = 500;
 
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $quoteCollectionFactory = $objectManager->get('\Magento\Quote\Model\ResourceModel\Quote\CollectionFactory');
-        $orderCollectionFactory = $objectManager->get('\Magento\Sales\Model\ResourceModel\Order\CollectionFactory');
+        $quoteCollectionFactory = $this->objectManager->get('\Magento\Quote\Model\ResourceModel\Quote\CollectionFactory');
+        $orderCollectionFactory = $this->objectManager->get('\Magento\Sales\Model\ResourceModel\Order\CollectionFactory');
 
         $fileName = 'interactions_' . $token_id . '.csv';
         $tempFileName = 'interactions_' . $token_id . '.temp';
