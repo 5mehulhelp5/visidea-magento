@@ -3,9 +3,6 @@
 /**
  * Add session context to cached views.
  *
- * @category  Visidea
- * @package   Inferendo_Visidea
- * @author    Inferendo SRL <hello@visidea.ai>
  * @copyright 2022 Inferendo SRL
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
  * @link      https://visidea.ai/
@@ -14,28 +11,29 @@
 namespace Inferendo\Visidea\Plugin;
 
 /**
- * CustomerSessionContext class
- * 
- * @category  Visidea
- * @package   Inferendo_Visidea
- * @author    Inferendo SRL <hello@visidea.ai>
- * @copyright 2022 Inferendo SRL
- * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
- * @link      https://visidea.ai/
+ * Adds customer session context to HTTP context for proper cache differentiation
  */
 class CustomerSessionContext
 {
-
+    /**
+     * Customer session instance
+     *
+     * @var \Magento\Customer\Model\Session
+     */
     protected $customerSession;
+
+    /**
+     * HTTP context instance
+     *
+     * @var \Magento\Framework\App\Http\Context
+     */
     protected $httpContext;
 
     /**
-     * Method __construct
+     * Constructor
      *
-     * @param \Magento\Customer\Model\Session     $customerSession customerSession
-     * @param \Magento\Framework\App\Http\Context $httpContext     httpContext
-     * 
-     * @return void
+     * @param \Magento\Customer\Model\Session     $customerSession Customer session instance
+     * @param \Magento\Framework\App\Http\Context $httpContext     HTTP context instance
      */
     public function __construct(
         \Magento\Customer\Model\Session $customerSession,
@@ -46,12 +44,12 @@ class CustomerSessionContext
     }
 
     /**
-     * Method aroundDispatch
+     * Around dispatch plugin to set customer context values
      *
-     * @param \Magento\Framework\App\ActionInterface  $subject subject
-     * @param callable                                $proceed proceed
-     * @param \Magento\Framework\App\RequestInterface $request request
-     * 
+     * @param \Magento\Framework\App\ActionInterface  $subject Action interface
+     * @param callable                                $proceed Proceed callable
+     * @param \Magento\Framework\App\RequestInterface $request Request interface
+     *
      * @return mixed
      */
     public function aroundDispatch(

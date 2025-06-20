@@ -1,12 +1,12 @@
 <?php
 /** @var \Inferendo\Visidea\Block\Adminhtml\System\Config\Field\InteractionExport $block */
-/** @var Magento\Framework\View\TemplateEngine\Php $this */
+/** @var Magento\Framework\View\TemplateEngine\Php $block */
 ?>
-<?php if($block->isEnabled()){ ?>
+<?php if ($block->isEnabled()) { ?>
 <tr id="row_order_export_csv">
     <td class="label">
-        <label for="row_order_export_csv"><?php echo __('Users CSV link:')?></label>
+        <label for="row_order_export_csv"><?= $block->getEscaper()->escapeHtml(__('Users CSV link:')) ?></label>
     </td>
-    <td class="value"><?php echo $block->getCustomerExportUrl()?></td>
+    <td class="value"><?= $block->getEscaper()->escapeHtml($block->getCustomerExportUrl()) ?></td>
 </tr>
 <?php } ?>

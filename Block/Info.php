@@ -3,44 +3,65 @@
 /**
  * Info for website.
  *
- * @category  Visidea
- * @package   Inferendo_Visidea
- * @author    Inferendo SRL <hello@visidea.ai>
  * @copyright 2022 Inferendo SRL
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
  * @link      https://visidea.ai/
+ * @api
  */
 
 namespace Inferendo\Visidea\Block;
 
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Locale\ResolverInterface;
+use Magento\Framework\Escaper;
+use Inferendo\Visidea\Helper\Data;
 
 /**
- * Info class
- * 
- * @category  Visidea
- * @package   Inferendo_Visidea
- * @author    Inferendo SRL <hello@visidea.ai>
- * @copyright 2022 Inferendo SRL
- * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
- * @link      https://visidea.ai/
+ * Provides customer and product information for Visidea integration
  */
 class Info extends \Magento\Framework\View\Element\Template
 {
+    /**
+     * @var \Magento\Customer\Model\Customer
+     */
     protected $currentCustomer;
+
+    /**
+     * @var \Magento\Framework\Registry
+     */
     protected $registry;
+
+    /**
+     * @var \Magento\Framework\App\Http\Context
+     */
     protected $httpContext;
+
+    /**
+     * @var \Magento\Framework\Locale\ResolverInterface
+     */
     protected $localeResolver;
+
+    /**
+     * @var Escaper
+     */
+    protected $escaper;
+
+    /**
+     * @var Data
+     */
+    protected $helper;
 
     /**
      * Method __construct
      *
-     * @param \Magento\Framework\View\Element\Template\Context $context     context
-     * @param \Magento\Framework\Registry                      $registry    registry
-     * @param \Magento\Framework\App\Http\Context              $httpContext httpContext
-     * @param array                                            $data        data
-     * 
+     * @param \Magento\Framework\View\Element\Template\Context $context        context
+     * @param \Magento\Framework\Registry                      $registry       registry
+     * @param \Magento\Framework\App\Http\Context              $httpContext    httpContext
+     * @param \Magento\Framework\Locale\ResolverInterface      $localeResolver localeResolver
+     * @param Escaper                                          $escaper        escaper
+     * @param Data                                             $helper         helper
+     * @param array                                            $data           data
+     *
      * @return void
      */
     public function __construct(
@@ -48,11 +69,15 @@ class Info extends \Magento\Framework\View\Element\Template
         \Magento\Framework\Registry $registry,
         \Magento\Framework\App\Http\Context $httpContext,
         \Magento\Framework\Locale\ResolverInterface $localeResolver,
+        Escaper $escaper,
+        Data $helper,
         array $data = []
     ) {
         $this->httpContext = $httpContext;
         $this->registry = $registry;
         $this->localeResolver = $localeResolver;
+        $this->escaper = $escaper;
+        $this->helper = $helper;
         parent::__construct($context, $data);
     }
 
@@ -99,4 +124,23 @@ class Info extends \Magento\Framework\View\Element\Template
         return $languageCode;
     }
 
+    /**
+     * Get escaper instance
+     *
+     * @return Escaper
+     */
+    public function getEscaper()
+    {
+        return $this->escaper;
+    }
+
+    /**
+     * Get helper instance
+     *
+     * @return Data
+     */
+    public function helper()
+    {
+        return $this->helper;
+    }
 }

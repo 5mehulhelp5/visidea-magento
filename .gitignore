@@ -3,7 +3,7 @@
 
 ### Inferendo specific ignore ###
 Inferendo/
-*.zip
+dist/*.zip
 
 ### macOS ###
 # General

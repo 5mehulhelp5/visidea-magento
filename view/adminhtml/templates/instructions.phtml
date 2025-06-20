@@ -1,6 +1,6 @@
 <?php
 /** @var \Inferendo\Visidea\Block\Adminhtml\System\Config\Field\InteractionExport $block */
-/** @var Magento\Framework\View\TemplateEngine\Php $this */
+/** @var Magento\Framework\View\TemplateEngine\Php $block */
 ?>
 <style type="text/css">
     .label {
@@ -15,33 +15,48 @@
     </td>
     <td class="value">
         <div style="margin-bottom:2rem;">
-            <img src="<?php echo $block->getImageUrl(); ?>" style="width:350px">
+            <img src="https://visidea.ai/wp-content/uploads/2022/02/VisideaLogoDef_RGBPositivo.png" style="width:350px">
         </div>
         <div style="margin-bottom:2rem;">
             Visidea is the Visual Search, Search Bar and Product Recommendations plugin for Magento.
         </div>
         <div style="margin-bottom:2rem;">
-            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/YUfZQmBE7Uc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe width="560" height="315" 
+                    src="https://www.youtube-nocookie.com/embed/YUfZQmBE7Uc" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
         </div>
         <div style="margin-bottom:2rem;">
-            To integrate your website with Visidea, click the link below, login/register and wait for the confirmation message.
+            To integrate your website with Visidea, click the link below, login/register and wait for the 
+            confirmation message.
         </div>
         <?php $visideaurl = $block->getVisideaUrl(); ?>
         <div style="margin-bottom:2rem;">
-            <strong><a href="<?php echo $visideaurl[1]; ?>" target="_blank">Integrate with Visidea</a></strong>
+            <strong>
+                <a href="<?= $block->getEscaper()->escapeHtml($visideaurl[1]); ?>" target="_blank">
+                    Integrate with Visidea
+                </a>
+            </strong>
         </div>
         <?php if ($visideaurl[0]): ?>
-            <script type="text/javascript">
+            <script>
                 location.reload();
             </script>
         <?php endif; ?>
         <div style="margin-bottom:2rem;">
             Any problems? You can take a look at our 
-            <strong><a href="https://docs.visidea.ai/docs/plugins/magento" target="_blank">documentation</a></strong>
-            or you can contact us: <strong><a href="mailto:support@visidea.ai">support@visidea.ai</a></strong>.
+            <strong>
+                <a href="https://docs.visidea.ai/docs/plugins/magento" target="_blank">documentation</a>
+            </strong>
+            or you can contact us: 
+            <strong><a href="mailto:support@visidea.ai">support@visidea.ai</a></strong>.
         </div>
         <div style="margin-bottom:2rem;">
-            Discover more about our service on our <strong><a href="https://visidea.ai/" target="_blank">website</a></strong>.
+            Discover more about our service on our 
+            <strong><a href="https://visidea.ai/" target="_blank">website</a></strong>.
         </div>
     </td>
 </tr>

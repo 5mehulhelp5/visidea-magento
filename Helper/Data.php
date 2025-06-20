@@ -31,66 +31,157 @@ use Magento\Quote\Model\ResourceModel\Quote\CollectionFactory as QuoteCollection
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Checkout\Model\Cart;
 
-
 /**
- * Data class
- * 
- * @category  Visidea
- * @package   Inferendo_Visidea
- * @author    Inferendo SRL <hello@visidea.ai>
- * @copyright 2022 Inferendo SRL
- * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0
- * @link      https://visidea.ai/
+ * Helper class for managing Visidea data operations
  */
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
     protected $logger;
+
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
     protected $storeManager;
+
+    /**
+     * @var OrderManagementInterface
+     */
     protected $orderManagement;
+
+    /**
+     * @var \Magento\Framework\ObjectManagerInterface
+     */
     protected $objectManager;
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
     protected $scopeConfig;
+
+    /**
+     * @var \Magento\Framework\App\Config\Storage\WriterInterface
+     */
     protected $writeConfig;
+
+    /**
+     * @var \Magento\Framework\Filesystem\Io\File
+     */
     protected $file;
+
+    /**
+     * @var \Magento\Framework\Filesystem\DirectoryList
+     */
     protected $dir;
+
+    /**
+     * @var \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory
+     */
     protected $quoteFactory;
+
+    /**
+     * @var \Magento\Quote\Model\Quote
+     */
     protected $quoteModel;
+
+    /**
+     * @var \Magento\Quote\Model\QuoteManagement
+     */
     protected $quoteManagement;
+
+    /**
+     * @var \Magento\Framework\Stdlib\DateTime\DateTime
+     */
     protected $dateTime;
+
+    /**
+     * @var \Magento\Framework\File\Csv
+     */
     protected $csvProcessor;
+
+    /**
+     * @var mixed
+     */
     protected $fileFactory;
+
+    /**
+     * @var \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory
+     */
     protected $productCollectionFactory;
+
+    /**
+     * @var \Magento\Customer\Model\Customer
+     */
     protected $customers;
+
+    /**
+     * @var \Magento\Customer\Model\CustomerFactory
+     */
     protected $customerFactory;
+
+    /**
+     * @var \Magento\Framework\App\Cache\TypeListInterface
+     */
     protected $cacheTypeList;
+
+    /**
+     * @var \Magento\Framework\App\Cache\Frontend\Pool
+     */
     protected $cacheFrontendPool;
+
+    /**
+     * @var \Magento\Framework\App\Http\Context
+     */
     private $_httpContext;
+
+    /**
+     * @var \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory
+     */
     private $quoteCollectionFactory;
+
+    /**
+     * @var \Magento\Sales\Model\ResourceModel\Order\CollectionFactory
+     */
     private $orderCollectionFactory;
+
+    /**
+     * @var Cart
+     */
     protected $cart;
 
-    const MODULE_ENABLED = 'inferendo_visidea/general/enable';
+    /**
+     * Module enabled configuration path
+     */
+    public const MODULE_ENABLED = 'inferendo_visidea/general/enable';
 
     /**
      * Method __construct
      *
-     * @param \Magento\Framework\App\Helper\Context                          $context                  context
-     * @param \Magento\Store\Model\StoreManagerInterface                     $storeManager             storeManager
-     * @param OrderManagementInterface                                       $orderManagement          orderManagement
-     * @param \Magento\Framework\ObjectManagerInterface                      $objectManager            objectManager
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface             $scopeConfig              scopeConfig
-     * @param \Magento\Framework\App\Config\Storage\WriterInterface          $writerConfig             writerConfig
-     * @param \Magento\Framework\Filesystem\Io\File                          $file                     file
-     * @param \Magento\Framework\Filesystem\DirectoryList                    $dir                      dir
-     * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory     $quoteFactory             quoteFactory
-     * @param \Magento\Quote\Model\Quote                                     $quoteModel               quoteModel
-     * @param \Magento\Quote\Model\QuoteManagement                           $quoteManagement          quoteManagement
-     * @param \Magento\Framework\Stdlib\DateTime\DateTime                    $dateTime                 dateTime
-     * @param \Magento\Framework\App\Http\Context                            $httpContext              httpContext
-     * @param \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory productCollectionFactory
-     * @param \Magento\Customer\Model\CustomerFactory                        $customerFactory          customerFactory
-     * @param \Magento\Customer\Model\Customer                               $customers                customers
-     * 
-     * @return void no return
+     * @param \Magento\Framework\App\Helper\Context                          $context
+     * @param \Magento\Store\Model\StoreManagerInterface                     $storeManager
+     * @param OrderManagementInterface                                       $orderManagement
+     * @param \Magento\Framework\ObjectManagerInterface                      $objectManager
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface             $scopeConfig
+     * @param \Magento\Framework\App\Config\Storage\WriterInterface          $scopeWriterConfig
+     * @param \Magento\Framework\Filesystem\Io\File                          $file
+     * @param \Magento\Framework\Filesystem\DirectoryList                    $dir
+     * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory     $quoteFactory
+     * @param \Magento\Quote\Model\Quote                                     $quoteModel
+     * @param \Magento\Quote\Model\QuoteManagement                           $quoteManagement
+     * @param \Magento\Framework\Stdlib\DateTime\DateTime                    $dateTime
+     * @param \Magento\Framework\App\Http\Context                            $httpContext
+     * @param \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory
+     * @param \Magento\Customer\Model\CustomerFactory                        $customerFactory
+     * @param \Magento\Customer\Model\Customer                               $customers
+     * @param \Magento\Framework\App\Cache\TypeListInterface                 $cacheTypeList
+     * @param \Magento\Framework\App\Cache\Frontend\Pool                     $cacheFrontendPool
+     * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory     $quoteCollectionFactory
+     * @param \Magento\Sales\Model\ResourceModel\Order\CollectionFactory     $orderCollectionFactory
+     * @param Cart                                                           $cart
+     *
+     * @return void
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
@@ -109,12 +200,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
         \Magento\Customer\Model\CustomerFactory $customerFactory,
         \Magento\Customer\Model\Customer $customers,
-        \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList, 
+        \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList,
         \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool,
         \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $quoteCollectionFactory,
         \Magento\Sales\Model\ResourceModel\Order\CollectionFactory $orderCollectionFactory,
         Cart $cart
-    
     ) {
         $this->storeManager = $storeManager;
         $this->logger = $context->getLogger();
@@ -174,7 +264,6 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param string $group   group
      * @param string $field   field
      * @param string $value   value
-     * @param int    $storeId storeId
      *
      * @return void
      */
@@ -190,21 +279,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function flushCache()
     {
-    $_types = [
-                'config',
-                'layout',
-                'block_html',
-                'collections',
-                'reflection',
-                'db_ddl',
-                'eav',
-                'config_integration',
-                'config_integration_api',
-                'full_page',
-                'translate',
-                'config_webservice'
-              ];
-    
+        $_types = [
+            'config',
+            'layout',
+            'block_html',
+            'collections',
+            'reflection',
+            'db_ddl',
+            'eav',
+            'config_integration',
+            'config_integration_api',
+            'full_page',
+            'translate',
+            'config_webservice'
+        ];
+
         foreach ($_types as $type) {
             $this->cacheTypeList->cleanType($type);
         }
@@ -341,9 +430,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function createExportFolder()
     {
         $destPath = $this->dir->getPath('media') . '/visidea/csv';
-        if (!is_dir($destPath)) {
-            $this->file->mkdir($destPath, 0755, true);
-        }
+        $this->file->mkdir($destPath, 0755, true);
     }
 
     /**
@@ -353,7 +440,14 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getInteractionsColumnsHeader()
     {
-        $headers = ['user_id', 'item_id', 'action', 'price', 'quantity', 'timestamp'];
+        $headers = [
+            'user_id',
+            'item_id',
+            'action',
+            'price',
+            'quantity',
+            'timestamp'
+        ];
         return $headers;
     }
 
@@ -364,7 +458,19 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getUsersColumnsHeader()
     {
-        $headers = ['user_id', 'email', 'name', 'surname', 'address', 'city', 'zip', 'state', 'country', 'birthday', 'createdDate'];
+        $headers = [
+            'user_id',
+            'email',
+            'name',
+            'surname',
+            'address',
+            'city',
+            'zip',
+            'state',
+            'country',
+            'birthday',
+            'createdDate'
+        ];
         return $headers;
     }
 
@@ -375,7 +481,25 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function getItemsColumnsHeader()
     {
-        $headers = ['item_id', 'name', 'description', 'brand_id', 'brand_name', 'price', 'market_price', 'discount', 'page_ids', 'page_names', 'url', 'images', 'stock', 'gender', 'ean', 'mpn', 'code'];
+        $headers = [
+            'item_id',
+            'name',
+            'description',
+            'brand_id',
+            'brand_name',
+            'price',
+            'market_price',
+            'discount',
+            'page_ids',
+            'page_names',
+            'url',
+            'images',
+            'stock',
+            'gender',
+            'ean',
+            'mpn',
+            'code'
+        ];
         return $headers;
     }
 
@@ -390,6 +514,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $isLoggedIn;
     }
 
+    /**
+     * Get cart product IDs as comma-separated string
+     *
+     * @return string
+     */
     public function getCartProductIds()
     {
         $productIds = [];
@@ -413,10 +542,19 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     /**
      * Method saveConfig
      *
+     * @param string $path
+     * @param string $value
+     * @param string $scope
+     * @param int $scopeId
+     *
      * @return void
      */
-    public function saveConfig($path, $value, $scope = \Magento\Store\Model\ScopeInterface::SCOPE_DEFAULT, $scopeId = 0)
-    {
+    public function saveConfig(
+        $path,
+        $value,
+        $scope = \Magento\Store\Model\ScopeInterface::SCOPE_DEFAULT,
+        $scopeId = 0
+    ) {
         $this->writeConfig->save(
             'inferendo_visidea/' . $path,
             $value,
@@ -424,5 +562,4 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $scopeId
         );
     }
-
 }
