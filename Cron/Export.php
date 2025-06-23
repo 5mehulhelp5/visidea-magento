@@ -210,7 +210,7 @@ class Export
      */
     private function exportItems($csvDirectory, $token_id)
     {
-        $pageSize = 500;
+        $pageSize = 100;
         $currentPage = 1;
 
         $fileName = 'items_' . $token_id . '.csv';
@@ -785,7 +785,7 @@ class Export
      */
     private function exportInteractions($csvDirectory, $token_id)
     {
-        $pageSize = 500;
+        $pageSize = 100;
 
         $quoteCollectionFactory = $this->objectManager->get(
             \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory::class
@@ -924,7 +924,7 @@ class Export
      */
     private function exportUsers($csvDirectory, $token_id)
     {
-        $pageSize = 500;
+        $pageSize = 100;
         $currentPage = 1;
 
         $fileName = 'users_' . $token_id . '.csv';

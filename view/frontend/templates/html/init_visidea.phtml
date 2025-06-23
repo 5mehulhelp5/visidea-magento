@@ -25,78 +25,128 @@ try {
         }
     }
 
-    $page = match ($currentFullAction) {
-        'cms_index_index' => 'home',
-        'catalog_product_view' => 'product',
-        'checkout_cart_index' => 'cart',
-        'checkout_onepage_success' => 'order',
-        default => 'other',
-    };
+    switch ($currentFullAction) {
+        case 'cms_index_index':
+            $page = 'home';
+            break;
+        case 'catalog_product_view':
+            $page = 'product';
+            break;
+        case 'checkout_cart_index':
+            $page = 'cart';
+            break;
+        case 'checkout_onepage_success':
+            $page = 'order';
+            break;
+        default:
+            $page = 'other';
+            break;
+    }
 
     $language = method_exists($block, 'getLanguage') ? $block->getLanguage() : 'en';
     $cartProductIdsString = ($page === 'cart' && method_exists($helper, 'getCartProductIds'))
         ? $helper->getCartProductIds()
         : '';
-    $storeId = method_exists($block, 'getStoreId') ? $block->getStoreId() : '';
+    $storeId = '';
+    if (method_exists($helper, 'getStoreId')) {
+        $storeId = $helper->getStoreId();
+    }
 
     $escaper = $block->getEscaper();
+
     ?>
-    <?php if ($page === 'home'): ?>
-        <div class="visidea-recommendations"
-            language="<?= $escaper->escapeHtmlAttr($language); ?>"
-            page="home"
-            user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>">
-        </div>
-    <?php endif; ?>
-
-    <?php if ($page === 'product'): ?>
-        <div class="visidea-recommendations"
-            language="<?= $escaper->escapeHtmlAttr($language); ?>"
-            page="product"
-            user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>"
-            item_id="<?= $escaper->escapeHtmlAttr($product_id); ?>">
-        </div>
-        <meta class="visidea-interaction"
-            type="item"
-            user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>"
-            item_id="<?= $escaper->escapeHtmlAttr($product_id); ?>"/>
-    <?php endif; ?>
-
-    <?php if ($page === 'cart'): ?>
-        <div class="visidea-recommendations"
-            language="<?= $escaper->escapeHtmlAttr($language); ?>"
-            page="cart"
-            user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>"
-            item_id="<?= $escaper->escapeHtmlAttr($cartProductIdsString); ?>">
-        </div>
-    <?php endif; ?>
-
-    <?php if ($page === 'order'): ?>
-        <div class="visidea-recommendations"
-            language="<?= $escaper->escapeHtmlAttr($language); ?>"
-            page="order"
-            user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>">
-        </div>
-    <?php endif; ?>
-
-    <div class="visidea-search-bar"
-        language="<?= $escaper->escapeHtmlAttr($language); ?>"
-        user_id="<?= $escaper->escapeHtmlAttr($user_id); ?>">
-    </div>
-
+    <div id="visidea-root"></div>
     <script>
-        require(["Visidea"], function (Visidea) {
-            window.visidea(
-                "<?= $escaper->escapeJs($website); ?>",
-                "<?= $escaper->escapeJs($public_token); ?>",
-                "<?= $escaper->escapeJs($language); ?>",
-                "<?= $escaper->escapeJs($storeId); ?>"
-            );
+        require([
+            'Magento_Customer/js/customer-data',
+            'Visidea'
+        ], function (customerData, Visidea) {
+            function renderVisidea() {
+                var customCustomer = customerData.get('custom_customer')();
+                var customerId = customCustomer.entity_id || customCustomer.customer_id || '';
+                var visideaUserId = customerId;
+                var visideaConfig = {
+                    website: "<?= $escaper->escapeJs($website) ?>",
+                    public_token: "<?= $escaper->escapeJs($public_token) ?>",
+                    page: "<?= $escaper->escapeJs($page) ?>",
+                    product_id: "<?= $escaper->escapeJs($product_id) ?>",
+                    cartProductIdsString: "<?= $escaper->escapeJs($cartProductIdsString) ?>",
+                    storeId: "<?= $escaper->escapeJs($storeId) ?>",
+                    language: "<?= $escaper->escapeJs($language) ?>",
+                    user_id: visideaUserId
+                };
+                var d = visideaConfig;
+                function createDiv(attrs, className) {
+                    var div = document.createElement('div');
+                    div.className = className;
+                    Object.keys(attrs).forEach(function(key) {
+                        div.setAttribute(key, attrs[key] !== undefined && attrs[key] !== null ? attrs[key] : '');
+                    });
+                    return div;
+                }
+                var root = document.getElementById('visidea-root');
+                if (!root) return;
+                root.innerHTML = '';
+                if (d.page === 'home') {
+                    root.appendChild(createDiv({
+                        language: d.language,
+                        page: 'home',
+                        user_id: d.user_id
+                    }, 'visidea-recommendations'));
+                }
+                if (d.page === 'product') {
+                    root.appendChild(createDiv({
+                        language: d.language,
+                        page: 'product',
+                        user_id: d.user_id,
+                        item_id: d.product_id
+                    }, 'visidea-recommendations'));
+                    var meta = document.createElement('meta');
+                    meta.className = 'visidea-interaction';
+                    meta.setAttribute('type', 'item');
+                    meta.setAttribute('user_id', d.user_id !== undefined && d.user_id !== null ? d.user_id : '');
+                    meta.setAttribute('item_id', d.product_id);
+                    root.appendChild(meta);
+                }
+                if (d.page === 'cart') {
+                    root.appendChild(createDiv({
+                        language: d.language,
+                        page: 'cart',
+                        user_id: d.user_id,
+                        item_id: d.cartProductIdsString
+                    }, 'visidea-recommendations'));
+                }
+                if (d.page === 'order') {
+                    root.appendChild(createDiv({
+                        language: d.language,
+                        page: 'order',
+                        user_id: d.user_id
+                    }, 'visidea-recommendations'));
+                }
+                root.appendChild(createDiv({
+                    language: d.language,
+                    user_id: visideaUserId
+                }, 'visidea-search-bar'));
+                window.visidea(
+                    d.website,
+                    d.public_token,
+                    d.language,
+                    d.storeId
+                );
+            }
+            var customCustomer = customerData.get('custom_customer')();
+            if (customCustomer && (customCustomer.entity_id || customCustomer.customer_id || customCustomer.loaded)) {
+                renderVisidea();
+            } else {
+                customerData.reload(['custom_customer'], false);
+                setTimeout(function() {
+                    renderVisidea();
+                }, 1000);
+            }
         });
     </script>
     <?php
 } catch (\Throwable $e) {
-    // Prevent fatal rendering errors in Marketplace tests
     return;
 }
 ?>

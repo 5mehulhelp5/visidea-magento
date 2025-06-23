@@ -562,4 +562,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $scopeId
         );
     }
+
+    /**
+     * Method getStoreId
+     *
+     * @return string
+     */
+    public function getStoreId()
+    {
+        try {
+            $storeId = $this->storeManager->getStore()->getId();
+            $this->logger->debug('Visidea getStoreId: ' . $storeId);
+            return $storeId;
+        } catch (\Exception $e) {
+            $this->logger->error('Visidea getStoreId error: ' . $e->getMessage());
+            return '';
+        }
+    }
 }

@@ -8,7 +8,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
-            <block class="Inferendo\Visidea\Block\Info" after="-" name="vs_init" template="Inferendo_Visidea::html/init_visidea.phtml" cacheable="false"/>
+            <block class="Inferendo\Visidea\Block\Info" after="-" name="vs_init" template="Inferendo_Visidea::html/init_visidea.phtml" cacheable="true"/>
         </referenceContainer>        
     </body>
 </page>
