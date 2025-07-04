@@ -256,8 +256,19 @@ class Export
             $productCollectionFactory = $this->objectManager->get(
                 \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory::class
             );
+
+            // Calculate total pages
+            $productsCollectionForCount = $productCollectionFactory->create();
+            $productsCollectionForCount->addAttributeToFilter(
+                'type_id',
+                ['in' => ['simple', 'virtual', 'downloadable', 'configurable']]
+            );
+            $productsCollectionForCount->setStoreId($primaryStoreId);
+            $totalProducts = $productsCollectionForCount->getSize();
+            $totalPages = (int)ceil($totalProducts / $pageSize);
+
             do {
-                $this->logger->info('Visidea - Processing page: ' . $currentPage);
+                $this->logger->info('Visidea - Processing page: ' . $currentPage . '/' . $totalPages);
                 $productsCollection = $productCollectionFactory->create();
                 $productsCollection->addAttributeToSelect([
                     'name', 'description', 'manufacturer', 'price', 'final_price', 'sku',
